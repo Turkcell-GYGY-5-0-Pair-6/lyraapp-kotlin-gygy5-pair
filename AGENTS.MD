@@ -26,6 +26,21 @@ Kod üretmeden önce şunları yapmak zorundasın;
 
 - Planı sun, onay almadan asla implementasyona başlama.
 
+### 2.4) MİMARİ KURALLAR (GOVERNANCE)
+
+Mimari/teknik kararlar `docs/decisions.md` dosyasında tutulur; bir karar verirken veya
+değiştirirken bu dosya güncellenmek ZORUNDADIR.
+
+Sunum katmanı **MVI** ile yazılır. Yeni bir ekran/feature MVI ile kodlanırken aşağıdaki
+dökümanlar BAĞLAYICI referanstır ve bunlara uymak ZORUNLUDUR:
+
+- `docs/architecture/mvi-overview.md` — genel prensipler, veri akışı, katman/paket yapısı.
+- `docs/architecture/mvi-contracts.md` — State + Intent + Effect kuralları.
+- `docs/architecture/mvi-viewmodel-rules.md` — ViewModel, UI bağlama (Route/Screen) ve DI kuralları.
+
+Referans implementasyon Login ekranıdır (`ui/auth/login/`). Bu referansı bozacak bir sapma
+gerekiyorsa DUR ve EK ONAY iste (bkz. §2.2).
+
 ## 3) ÇIKTI FORMATI
 
 Her implementasyon ya da plan sonrası aşağıdaki çıktı formatına uymak zorundasın.
