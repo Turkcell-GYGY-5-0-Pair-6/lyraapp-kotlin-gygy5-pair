@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.turkcell.lyraapp.ui.auth.login.LoginRoute
 import com.turkcell.lyraapp.ui.auth.register.RegisterRoute
+import com.turkcell.lyraapp.ui.home.HomeRoute
 @Composable
 fun LyraNavHost(
     modifier: Modifier = Modifier,
@@ -21,7 +22,12 @@ fun LyraNavHost(
     ) {
         composable(LyraDestination.Login.route) {
             LoginRoute(
-                onNavigateToHome = { /* TODO: Home grafiği eklenince bağlanacak. */ },
+                onNavigateToHome = {
+                    navController.navigate(LyraDestination.Home.route) {
+                        popUpTo(LyraDestination.Login.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToRegister = {
                     navController.navigate(LyraDestination.Register.route) {
                         launchSingleTop = true
@@ -32,7 +38,12 @@ fun LyraNavHost(
 
         composable(LyraDestination.Register.route) {
             RegisterRoute(
-                onNavigateToHome = { /* TODO: Home grafiği eklenince bağlanacak. */ },
+                onNavigateToHome = {
+                    navController.navigate(LyraDestination.Home.route) {
+                        popUpTo(LyraDestination.Login.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onNavigateToLogin = {
                     navController.navigate(LyraDestination.Login.route) {
                         popUpTo(LyraDestination.Login.route) { inclusive = false }
@@ -40,6 +51,17 @@ fun LyraNavHost(
                     }
                 },
                 onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(LyraDestination.Home.route) {
+            HomeRoute(
+                onNavigateToLogin = {
+                    navController.navigate(LyraDestination.Login.route) {
+                        popUpTo(LyraDestination.Home.route) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
     }
