@@ -23,6 +23,8 @@ import com.turkcell.lyraapp.ui.home.HomeRoute
 @Composable
 fun LyraNavHost(
     modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
      val backStackEntry by navController.currentBackStackEntryAsState()
@@ -74,7 +76,7 @@ fun LyraNavHost(
                 )
 
             }
-            composable(LyraDestination.Home.route) { HomeRoute() }
+            composable(LyraDestination.Home.route) { HomeRoute(isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
             composable(LyraDestination.Search.route) { PlaceholderScreen(title = "Ara") }
             composable(LyraDestination.Library.route) { PlaceholderScreen(title = "Kütüphane") }
             composable(LyraDestination.Favorites.route) { PlaceholderScreen(title = "Favoriler") }

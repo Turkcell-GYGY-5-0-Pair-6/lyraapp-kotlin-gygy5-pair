@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -50,6 +51,8 @@ import com.turkcell.lyraapp.ui.icons.LyraIcons
 @Composable
 fun HomeRoute(
     modifier: Modifier = Modifier,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ){
     //ViewModel Flow’unu Compose state’e bağlar ve ekran görünürken çalıştırır, görünmezken durdurur.
@@ -73,6 +76,8 @@ fun HomeRoute(
     }
     HomeScreen(
         state = uiState,
+        isDarkTheme = isDarkTheme,
+        onToggleTheme = onToggleTheme,
         onIntent = viewModel::onIntent,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
@@ -84,6 +89,8 @@ fun HomeRoute(
 @Composable
 fun HomeScreen(
     state: HomeUiState,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     onIntent: (HomeIntent) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -111,7 +118,7 @@ fun HomeScreen(
                     .statusBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                item { HomeHeader(greeting = state.greeting, userInitials = state.userInitials) }
+                item { HomeHeader(greeting = state.greeting, userInitials = state.userInitials, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
                 item { QuickPickGrid(quickPicks = state.quickPicks) }
                 item { SectionHeader(title = "Son çalınanlar", trailingText = "Tümü") }
                 item { RecentlyPlayedRow(items = state.recentlyPlayed) }
@@ -127,6 +134,8 @@ fun HomeScreen(
 private fun HomeHeader(
     greeting: String,
     userInitials: String,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -148,12 +157,14 @@ private fun HomeHeader(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        Icon(
-            imageVector = LyraIcons.LightMode,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp),
-        )
+        IconButton(onClick = onToggleTheme) {
+            Icon(
+                imageVector = LyraIcons.LightMode,
+                contentDescription = if (isDarkTheme) "Açık moda geç" else "Koyu moda geç",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        }
         Spacer(Modifier.width(16.dp))
         UserAvatar(initials = userInitials)
     }
