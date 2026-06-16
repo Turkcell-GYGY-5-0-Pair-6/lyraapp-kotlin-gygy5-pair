@@ -230,6 +230,48 @@ object LyraIcons {
         )
     }
 
+    val Add: ImageVector by lazy {
+        lyraIcon(
+            name = "Add",
+            pathData = "M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6V13z",
+        )
+    }
+
+    val Check: ImageVector by lazy {
+        lyraIcon(
+            name = "Check",
+            pathData = "M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41-1.41z",
+        )
+    }
+
+    val SortArrows: ImageVector by lazy {
+        lyraIcon(
+            name = "SortArrows",
+            pathData = "M16,17.01V10h-2v7.01h-3L15,21l4-3.99h-3z M9,3L5,6.99h3V14h2V6.99h3L9,3z",
+        )
+    }
+
+    val GridView: ImageVector by lazy {
+        lyraIcon(
+            name = "GridView",
+            pathData = "M4,11h5V5H4v6z M4,19h5v-6H4v6z M11,5v6h5V5h-5z M11,19h5v-6h-5v6z",
+        )
+    }
+
+    val PushPin: ImageVector by lazy {
+        lyraIcon(
+            name = "PushPin",
+            pathData = "M16,12V4h1V2H7v2h1v8l-2,2v2h5.2v6h1.6v-6H18v-2L16,12z",
+        )
+    }
+
+    val MoreVert: ImageVector by lazy {
+        lyraIcon(
+            name = "MoreVert",
+            pathData = "M12,8c1.1,0,2-0.9,2-2s-0.9-2-2-2s-2,0.9-2,2S10.9,8,12,8z M12,14c1.1,0,2-0.9,2-2s-0.9-2-2-2s-2,0.9-2,2S10.9,14,12,14z M12,20c1.1,0,2-0.9,2-2s-0.9-2-2-2s-2,0.9-2,2S10.9,20,12,20z",
+        )
+    }
+
 }
 
 /**
