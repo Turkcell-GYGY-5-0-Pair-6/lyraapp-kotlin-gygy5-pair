@@ -33,6 +33,17 @@
 - Sebep: Compose bileşen sürümlerini BOM ile senkronize etmek ve modern Material3 tasarım kütüphanesini kullanmak.
 
 
+### Tema Yönetimi
+
+- Seçim: **Compose Dark/Light Tema + DataStore Preferences**
+
+- Son Güncelleme Tarihi: 16.06.2026
+
+- Kapsam: `LyraAppTheme`, `ThemePreferenceRepository`, `MainActivity` uygulama başlatma süreci
+
+- Sebep: Kullanıcı temayı kalıcı olarak saklamak, tema seçimini uygulama düzeyinde yönetmek ve Material3 tema paletini tek bir kaynaktan sağlamak.
+
+
 ### Kotlin Coroutines
 
 - Seçim: **kotlinx.coroutines.android**

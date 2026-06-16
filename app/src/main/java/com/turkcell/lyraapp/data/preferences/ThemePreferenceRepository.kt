@@ -13,6 +13,9 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
+//datastore oluşturma Telefon içinde oluşan dosya:theme_preferences.preferences_pb
+
+//DataStore'da değerler key ile tutulur.
 private val Context.themeDataStore by preferencesDataStore(name = "theme_preferences")
 
 private val DARK_THEME_KEY = booleanPreferencesKey("dark_theme")
@@ -27,7 +30,8 @@ class ThemePreferenceRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ThemePreferenceRepository {
 
-    override val isDarkTheme: Flow<Boolean> =
+    //DataStore'daki veriyi dinler.
+    override val isDarkTheme: Flow<Boolean> = //flow: değer değişirse haber ver
         context.themeDataStore.data
             .catch { exception ->
                 if (exception is IOException) {
@@ -40,6 +44,7 @@ class ThemePreferenceRepositoryImpl @Inject constructor(
                 preferences[DARK_THEME_KEY] ?: true
             }
 
+    //Kullanıcı koyu tema seçerse DataStore'a kaydediliyor.
     override suspend fun setDarkTheme(enabled: Boolean) {
         context.themeDataStore.edit { preferences ->
             preferences[DARK_THEME_KEY] = enabled

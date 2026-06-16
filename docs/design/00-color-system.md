@@ -110,9 +110,8 @@ val LightScrim            = Color(0xFF000000)
 ## 2. `Theme.kt` — ColorScheme + MaterialTheme
 
 ```kotlin
-package com.lyraapp.ui.theme
+package com.turkcell.lyraapp.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -135,13 +134,13 @@ private val LyraDarkColors = darkColorScheme(
     onError              = DarkOnError,
     errorContainer       = DarkErrorContainer,
     onErrorContainer     = DarkOnErrorContainer,
-    background           = DarkSurface,        // türetilen: surface ile aynı
-    onBackground         = DarkOnSurface,      // türetilen: onSurface ile aynı
+    background           = DarkSurface,
+    onBackground         = DarkOnSurface,
     surface              = DarkSurface,
     onSurface            = DarkOnSurface,
     surfaceVariant       = DarkSurfaceVariant,
     onSurfaceVariant     = DarkOnSurfaceVariant,
-    surfaceTint          = DarkPrimary,        // M3 varsayılanı = primary
+    surfaceTint          = DarkPrimary,
     surfaceDim           = DarkSurfaceDim,
     surfaceBright        = DarkSurfaceBright,
     surfaceContainerLowest  = DarkSurfaceContainerLowest,
@@ -197,20 +196,29 @@ private val LyraLightColors = lightColorScheme(
 )
 
 @Composable
-fun LyraTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // KURAL: Dynamic Color KAPALI. Marka paleti her cihazda sabit kalmalı.
-    content: @Composable () -> Unit,
+fun LyraAppTheme(
+    darkTheme: Boolean = true,
+    content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) LyraDarkColors else LyraLightColors
+
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = LyraTypography, // ayrı Type.kt
+        typography = Typography,
         content = content,
     )
 }
 ```
 
-> **Varsayılan tema:** LyraApp varsayılan olarak DarkTheme olarak açılır, kullanıcı bunu değiştirmekte özgürdür.
+## 3. Tema Değişimi ve Hafıza
+
+- `LyraAppTheme(darkTheme = Boolean)` uygulamanın tüm Compose ağacındaki renk paletini belirler.
+- Tema tercihi `ThemePreferenceRepository` aracılığıyla `PreferencesDataStore` içinde `dark_theme` boolean anahtarıyla kalıcı hale getirilir.
+- Uygulama açılışında `MainActivity` `ThemePreferenceRepository.isDarkTheme` akışını izler ve `LyraAppTheme(darkTheme = isDarkTheme)` olarak sarar.
+- Kullanıcı temayı değiştirdiğinde `ThemePreferenceRepository.setDarkTheme(!isDarkTheme)` çağrısı yapılır; Compose recomposition sayesinde yeni tema anında uygulanır.
+- `ThemePreferenceRepository`, `IOException` durumda `emptyPreferences()` döndürerek uygulamanın varsayılan `true` (Dark) temasına devam etmesini sağlar.
+- Bu yaklaşımda tema seçimi app-level global state olarak yönetilir; ekranlar doğrudan `DataStore` veya tema kaydetme / okuma işlemlerine müdahale etmez.
+
+> **Varsayılan tema:** LyraApp varsayılan olarak DarkTheme olarak açılır; kullanıcı bunu değiştirmekte özgürdür.
 
 ---

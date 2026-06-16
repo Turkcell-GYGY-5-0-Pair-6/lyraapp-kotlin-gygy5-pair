@@ -52,6 +52,7 @@ class LoginViewModel @Inject constructor(
    Dallar `is ...` biçiminde yazılır.
 5. Asenkron iş `viewModelScope.launch { ... }` içinde, repository üzerinden yapılır.
 6. **Yasak:** ViewModel içinde `Context`, `View`, `@Composable`, `Activity`, navigasyon API'si.
+   - Uygulama genel ayarları (tema tercihi, dil seçimi vb.) ViewModel yerine repository / app-level state olarak yönetilmelidir.
 7. State güncellemeleri yalnızca `_uiState.update { it.copy(...) }` ile yapılır (atomik).
 
 ---

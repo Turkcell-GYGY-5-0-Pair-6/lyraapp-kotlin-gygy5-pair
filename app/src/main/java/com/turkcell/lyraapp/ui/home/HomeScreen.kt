@@ -1,5 +1,6 @@
 package com.turkcell.lyraapp.ui.home
 
+import android.R.attr.contentDescription
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -158,8 +159,12 @@ private fun HomeHeader(
             )
         }
         IconButton(onClick = onToggleTheme) {
+
             Icon(
-                imageVector = LyraIcons.LightMode,
+                imageVector = if (isDarkTheme)
+                    LyraIcons.LightMode
+                else
+                    LyraIcons.DarkMode,
                 contentDescription = if (isDarkTheme) "Açık moda geç" else "Koyu moda geç",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp),
