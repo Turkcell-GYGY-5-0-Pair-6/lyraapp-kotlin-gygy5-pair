@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import com.turkcell.lyraapp.ui.icons.LyraIcons
 
 enum class LyraBottomBarTab(
@@ -24,6 +26,7 @@ enum class LyraBottomBarTab(
     Search(LyraDestination.Search,"Ara", LyraIcons.Search, LyraIcons.Search),
     Library(LyraDestination.Library, "Kütüphane",LyraIcons.LibraryMusic, LyraIcons.LibraryMusicOutlined),
     Favorites(LyraDestination.Favorites,"Favoriler", LyraIcons.Favorite, LyraIcons.FavoriteOutlined),
+    Profile(LyraDestination.Profile,"Profil", LyraIcons.Person, LyraIcons.PersonOutlined),
 }
 
 fun isTopLevelRoute(route: String?): Boolean =
@@ -55,7 +58,9 @@ fun LyraBottomBar(
                 label = {
                     Text(
                         text = tab.label,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                     )
                 },

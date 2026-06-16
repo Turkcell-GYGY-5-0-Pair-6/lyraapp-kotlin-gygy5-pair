@@ -1,20 +1,24 @@
 package com.turkcell.lyraapp.data.home
 
+import com.turkcell.lyraapp.data.profile.ProfileRepository
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 
-class MockHomeRepository @Inject constructor() : HomeRepository {
+class MockHomeRepository @Inject constructor(
+    private val profileRepository: ProfileRepository
+) : HomeRepository {
     override suspend fun getHomeFeed(): Result<HomeFeed> {
         delay(NETWORK_DELAY_MS)
+        val profile = profileRepository.getProfileInfo().getOrNull()
+        val initials = profile?.initials ?: "ZK"
         return Result.success(
             HomeFeed(
-                userInitials = "ZK",
+                userInitials = initials,
                 quickPicks = QUICK_PICKS,
                 recentlyPlayed = RECENTLY_PLAYED,
                 playlistsForYou = PLAYLISTS_FOR_YOU,
             ),
         )
-
     }
 
     private companion object {
@@ -40,7 +44,5 @@ class MockHomeRepository @Inject constructor() : HomeRepository {
             PlaylistForYou("pl-2", "Sakin Akşamlar", 0xFF6B5FB8, 0xFF3A3270),
             PlaylistForYou("pl-3", "Enerji Ver", 0xFF3FAE9C, 0xFF1E5D52),
         )
-
-
     }
 }

@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.turkcell.lyraapp.ui.auth.login.LoginRoute
 import com.turkcell.lyraapp.ui.auth.register.RegisterRoute
 import com.turkcell.lyraapp.ui.home.HomeRoute
+import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 
 @Composable
@@ -82,7 +83,18 @@ fun LyraNavHost(
             composable(LyraDestination.Search.route) { SearchRoute() }
             composable(LyraDestination.Library.route) { PlaceholderScreen(title = "Kütüphane") }
             composable(LyraDestination.Favorites.route) { PlaceholderScreen(title = "Favoriler") }
-            composable(LyraDestination.Profile.route) { PlaceholderScreen(title = "Profil") }
+            composable(LyraDestination.Profile.route) {
+                ProfileRoute(
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme,
+                    onNavigateToLogin = {
+                        navController.navigate(LyraDestination.Login.route) {
+                            popUpTo(LyraDestination.Home.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
 
 
         }
