@@ -6,11 +6,38 @@ import javax.inject.Inject
 class FakeLibraryRepository @Inject constructor() : LibraryRepository {
     override suspend fun getLibraryPlaylists(): Result<List<LibraryPlaylist>> {
         delay(800L) // Ağ gecikmesi simülasyonu
-        return Result.success(PLAYLISTS)
+        return Result.success(PLAYLISTS.toList())
+    }
+
+    override suspend fun getAvailableSongs(): Result<List<LibrarySong>> {
+        delay(400L)
+        return Result.success(AVAILABLE_SONGS)
+    }
+
+    override suspend fun createPlaylist(
+        title: String,
+        description: String,
+        isPublic: Boolean,
+        songIds: List<String>
+    ): Result<Unit> {
+        delay(800L)
+        // Yeni çalma listesi oluştur
+        val newPlaylist = LibraryPlaylist(
+            id = "lib-${PLAYLISTS.size + 1}",
+            title = title,
+            type = "Çalma listesi",
+            songCount = songIds.size,
+            isPinned = false,
+            // Önizlemedeki gibi turuncu-kahve gradyanı varsayılan olarak kullanılır
+            artworkStartColor = 0xFFD98E4A,
+            artworkEndColor = 0xFF8A5526
+        )
+        PLAYLISTS.add(newPlaylist)
+        return Result.success(Unit)
     }
 
     private companion object {
-        val PLAYLISTS = listOf(
+        val PLAYLISTS = mutableListOf(
             LibraryPlaylist(
                 id = "lib-1",
                 title = "Beğenilen Şarkılar",
@@ -66,5 +93,16 @@ class FakeLibraryRepository @Inject constructor() : LibraryRepository {
                 artworkEndColor = 0xFF1E5D52
             )
         )
+
+        val AVAILABLE_SONGS = listOf(
+            LibrarySong("song-1", "Gece Yarısı", "Mavi Deniz", 0xFF6FBF5A, 0xFF356B2A),
+            LibrarySong("song-2", "Sessiz Şehir", "Ela Tuna", 0xFF8B6FB8, 0xFF4A3D6B),
+            LibrarySong("song-3", "Yıldız Tozu", "Polaris", 0xFF3D5A80, 0xFF1B2A45),
+            LibrarySong("song-4", "Sahil Yolu", "Kumsal", 0xFFD98E4A, 0xFF8A5526),
+            LibrarySong("song-5", "Mor Bulutlar", "Derin Kaya", 0xFF4AC2A8, 0xFF1F6E5C),
+            LibrarySong("song-6", "İlk Işık", "Sabah Ezgisi", 0xFF5AAFC9, 0xFF2A5F73),
+            LibrarySong("song-7", "Kayıp Anlar", "Eko", 0xFF3FAE9C, 0xFF1E5D52)
+        )
     }
 }
+

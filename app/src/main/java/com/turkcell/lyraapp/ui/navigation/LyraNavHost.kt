@@ -22,6 +22,7 @@ import com.turkcell.lyraapp.ui.auth.register.RegisterRoute
 import com.turkcell.lyraapp.ui.home.HomeRoute
 import com.turkcell.lyraapp.ui.favorites.FavoritesRoute
 import com.turkcell.lyraapp.ui.library.LibraryRoute
+import com.turkcell.lyraapp.ui.library.create.CreatePlaylistRoute
 import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 
@@ -83,10 +84,24 @@ fun LyraNavHost(
             }
             composable(LyraDestination.Home.route) { HomeRoute(isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
             composable(LyraDestination.Search.route) { SearchRoute() }
-            composable(LyraDestination.Library.route) { LibraryRoute() }
+            composable(LyraDestination.Library.route) {
+                LibraryRoute(
+                    onNavigateToCreatePlaylist = {
+                        navController.navigate(LyraDestination.CreatePlaylist.route)
+                    }
+                )
+            }
             composable(LyraDestination.Favorites.route) {
                 FavoritesRoute(
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(LyraDestination.CreatePlaylist.route) {
+                CreatePlaylistRoute(
+                    onNavigateBack = { navController.popBackStack() },
+                    onSaveSuccess = {
+                        navController.popBackStack()
+                    }
                 )
             }
             composable(LyraDestination.Profile.route) {

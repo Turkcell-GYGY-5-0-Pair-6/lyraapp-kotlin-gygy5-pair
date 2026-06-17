@@ -9,16 +9,23 @@ import com.turkcell.lyraapp.data.library.LibraryPlaylist
 
 data class LibraryUiState(
     val playlists: List<LibraryPlaylist> = emptyList(),
+    val filteredPlaylists: List<LibraryPlaylist> = emptyList(),
     val isLoading: Boolean = false,
     val selectedFilter: String = "Çalma listeleri",
+    val isSearching: Boolean = false,
+    val searchQuery: String = "",
     val error: String? = null
 )
 
 sealed interface LibraryIntent {
     data object LoadLibrary : LibraryIntent
     data class FilterSelected(val filter: String) : LibraryIntent
+    data object AddPlaylistClicked : LibraryIntent
+    data object ToggleSearch : LibraryIntent
+    data class SearchQueryChanged(val query: String) : LibraryIntent
 }
 
 sealed interface LibraryEffect {
     data class ShowError(val message: String) : LibraryEffect
+    data object NavigateToCreatePlaylist : LibraryEffect
 }

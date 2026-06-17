@@ -3,6 +3,7 @@ package com.turkcell.lyraapp.ui.library
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.turkcell.lyraapp.data.library.LibraryRepository
+import com.turkcell.lyraapp.data.library.LibraryPlaylist
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +39,30 @@ class LibraryViewModel @Inject constructor(
             is LibraryIntent.FilterSelected -> {
                 _uiState.update { it.copy(selectedFilter = intent.filter) }
             }
+            is LibraryIntent.AddPlaylistClicked -> {
+                viewModelScope.launch {
+                    _effect.send(LibraryEffect.NavigateToCreatePlaylist)
+                }
+            }
+            is LibraryIntent.ToggleSearch -> {
+                _uiState.update { current ->
+                    val isSearching = !current.isSearching
+                    val query = if (isSearching) current.searchQuery else ""
+                    current.copy(
+                        isSearching = isSearching,
+                        searchQuery = query,
+                        filteredPlaylists = filterPlaylists(current.playlists, query)
+                    )
+                }
+            }
+            is LibraryIntent.SearchQueryChanged -> {
+                _uiState.update { current ->
+                    current.copy(
+                        searchQuery = intent.query,
+                        filteredPlaylists = filterPlaylists(current.playlists, intent.query)
+                    )
+                }
+            }
         }
     }
 
@@ -49,7 +74,12 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = false) }
             result
                 .onSuccess { list ->
-                    _uiState.update { it.copy(playlists = list) }
+                    _uiState.update { current ->
+                        current.copy(
+                            playlists = list,
+                            filteredPlaylists = filterPlaylists(list, current.searchQuery)
+                        )
+                    }
                 }
                 .onFailure { error ->
                     val errorMsg = error.message ?: "Kütüphane listesi yüklenemedi."
@@ -57,5 +87,10 @@ class LibraryViewModel @Inject constructor(
                     _effect.send(LibraryEffect.ShowError(errorMsg))
                 }
         }
+    }
+
+    private fun filterPlaylists(list: List<LibraryPlaylist>, query: String): List<LibraryPlaylist> {
+        if (query.isBlank()) return list
+        return list.filter { it.title.contains(query, ignoreCase = true) }
     }
 }

@@ -30,6 +30,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,19 +50,31 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.turkcell.lyraapp.data.library.LibraryPlaylist
 import com.turkcell.lyraapp.ui.icons.LyraIcons
 import com.turkcell.lyraapp.ui.theme.LyraAppTheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 fun LibraryRoute(
+    onNavigateToCreatePlaylist: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.onIntent(LibraryIntent.LoadLibrary)
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is LibraryEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
+                LibraryEffect.NavigateToCreatePlaylist -> onNavigateToCreatePlaylist()
             }
         }
     }
@@ -92,36 +106,79 @@ fun LibraryScreen(
                 .statusBarsPadding()
                 .padding(top = 16.dp)
         ) {
-            // Üst Başlık ve İkonlar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Kütüphane",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { /* Arama fonksiyonu */ }) {
+            if (state.isSearching) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextField(
+                        value = state.searchQuery,
+                        onValueChange = { onIntent(LibraryIntent.SearchQueryChanged(it)) },
+                        placeholder = {
+                            Text(
+                                text = "Çalma listesi ara...",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                )
+                            )
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                            cursorColor = MaterialTheme.colorScheme.primary
+                        ),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = { onIntent(LibraryIntent.ToggleSearch) }) {
                         Icon(
-                            imageVector = LyraIcons.Search,
-                            contentDescription = "Ara",
+                            imageVector = LyraIcons.Close,
+                            contentDescription = "Aramayı kapat",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    IconButton(onClick = { /* Ekle fonksiyonu */ }) {
-                        Icon(
-                            imageVector = LyraIcons.Add,
-                            contentDescription = "Çalma Listesi Ekle",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
+                }
+            } else {
+                // Üst Başlık ve İkonlar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Kütüphane",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { onIntent(LibraryIntent.ToggleSearch) }) {
+                            Icon(
+                                imageVector = LyraIcons.Search,
+                                contentDescription = "Ara",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(onClick = { onIntent(LibraryIntent.AddPlaylistClicked) }) {
+                            Icon(
+                                imageVector = LyraIcons.Add,
+                                contentDescription = "Çalma Listesi Ekle",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -180,7 +237,6 @@ fun LibraryScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Liste Görünümü
             if (state.isLoading && state.playlists.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -193,7 +249,7 @@ fun LibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(state.playlists, key = { it.id }) { item ->
+                    items(state.filteredPlaylists, key = { it.id }) { item ->
                         LibraryPlaylistItem(item = item, onClick = { /* Playlist detaya git */ })
                     }
                 }
