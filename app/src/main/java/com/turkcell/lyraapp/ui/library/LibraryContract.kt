@@ -23,9 +23,11 @@ sealed interface LibraryIntent {
     data object AddPlaylistClicked : LibraryIntent
     data object ToggleSearch : LibraryIntent
     data class SearchQueryChanged(val query: String) : LibraryIntent
+    data class PlaylistClicked(val playlistId: String) : LibraryIntent
 }
 
 sealed interface LibraryEffect {
     data class ShowError(val message: String) : LibraryEffect
     data object NavigateToCreatePlaylist : LibraryEffect
+    data class NavigateToPlaylistDetail(val playlistId: String) : LibraryEffect
 }

@@ -8,6 +8,6 @@ enum class LyraDestination(val route: String) {
     Library("library"),
     Favorites("favorites"),
     Profile("profile"),
-    CreatePlaylist("create_playlist")
-
+    CreatePlaylist("create_playlist"),
+    PlaylistDetail("playlist_detail/{playlistId}")
 }

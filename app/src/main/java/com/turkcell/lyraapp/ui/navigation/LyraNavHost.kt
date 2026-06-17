@@ -17,6 +17,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.turkcell.lyraapp.ui.auth.login.LoginRoute
 import com.turkcell.lyraapp.ui.auth.register.RegisterRoute
 import com.turkcell.lyraapp.ui.home.HomeRoute
@@ -25,6 +27,7 @@ import com.turkcell.lyraapp.ui.library.LibraryRoute
 import com.turkcell.lyraapp.ui.library.create.CreatePlaylistRoute
 import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
+import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
 
 @Composable
 fun LyraNavHost(
@@ -82,12 +85,23 @@ fun LyraNavHost(
                 )
 
             }
-            composable(LyraDestination.Home.route) { HomeRoute(isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
+            composable(LyraDestination.Home.route) {
+                HomeRoute(
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme,
+                    onNavigateToPlaylistDetail = { playlistId ->
+                        navController.navigate("playlist_detail/$playlistId")
+                    }
+                )
+            }
             composable(LyraDestination.Search.route) { SearchRoute() }
             composable(LyraDestination.Library.route) {
                 LibraryRoute(
                     onNavigateToCreatePlaylist = {
                         navController.navigate(LyraDestination.CreatePlaylist.route)
+                    },
+                    onNavigateToPlaylistDetail = { playlistId ->
+                        navController.navigate("playlist_detail/$playlistId")
                     }
                 )
             }
@@ -114,6 +128,16 @@ fun LyraNavHost(
                             launchSingleTop = true
                         }
                     }
+                )
+            }
+            composable(
+                route = LyraDestination.PlaylistDetail.route,
+                arguments = listOf(
+                    navArgument("playlistId") { type = NavType.StringType }
+                )
+            ) {
+                PlaylistDetailRoute(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

@@ -21,8 +21,10 @@ data class HomeUiState(
 
 sealed interface HomeIntent {
     data object Retry : HomeIntent
+    data class PlaylistClicked(val playlistId: String) : HomeIntent
 }
 
 sealed interface HomeEffect {
     data class ShowError(val message: String) : HomeEffect
+    data class NavigateToPlaylistDetail(val playlistId: String) : HomeEffect
 }

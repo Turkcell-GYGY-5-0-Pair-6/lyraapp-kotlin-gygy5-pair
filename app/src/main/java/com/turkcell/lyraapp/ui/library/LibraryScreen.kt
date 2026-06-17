@@ -57,6 +57,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 @Composable
 fun LibraryRoute(
     onNavigateToCreatePlaylist: () -> Unit,
+    onNavigateToPlaylistDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
@@ -75,6 +76,7 @@ fun LibraryRoute(
             when (effect) {
                 is LibraryEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
                 LibraryEffect.NavigateToCreatePlaylist -> onNavigateToCreatePlaylist()
+                is LibraryEffect.NavigateToPlaylistDetail -> onNavigateToPlaylistDetail(effect.playlistId)
             }
         }
     }
@@ -250,7 +252,7 @@ fun LibraryScreen(
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     items(state.filteredPlaylists, key = { it.id }) { item ->
-                        LibraryPlaylistItem(item = item, onClick = { /* Playlist detaya git */ })
+                        LibraryPlaylistItem(item = item, onClick = { onIntent(LibraryIntent.PlaylistClicked(item.id)) })
                     }
                 }
             }

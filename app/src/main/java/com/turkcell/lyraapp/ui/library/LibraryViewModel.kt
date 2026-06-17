@@ -63,6 +63,11 @@ class LibraryViewModel @Inject constructor(
                     )
                 }
             }
+            is LibraryIntent.PlaylistClicked -> {
+                viewModelScope.launch {
+                    _effect.send(LibraryEffect.NavigateToPlaylistDetail(intent.playlistId))
+                }
+            }
         }
     }
 

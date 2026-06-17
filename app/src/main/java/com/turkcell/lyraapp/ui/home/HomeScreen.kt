@@ -2,6 +2,7 @@ package com.turkcell.lyraapp.ui.home
 
 import android.R.attr.contentDescription
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,7 @@ import com.turkcell.lyraapp.ui.icons.LyraIcons
 
 @Composable
 fun HomeRoute(
+    onNavigateToPlaylistDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
@@ -71,6 +73,9 @@ fun HomeRoute(
                     if (result == SnackbarResult.ActionPerformed){
                         viewModel.onIntent(HomeIntent.Retry)
                     }
+                }
+                is HomeEffect.NavigateToPlaylistDetail -> {
+                    onNavigateToPlaylistDetail(effect.playlistId)
                 }
             }
         }
@@ -120,11 +125,11 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item { HomeHeader(greeting = state.greeting, userInitials = state.userInitials, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
-                item { QuickPickGrid(quickPicks = state.quickPicks) }
+                item { QuickPickGrid(quickPicks = state.quickPicks, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
                 item { SectionHeader(title = "Son çalınanlar", trailingText = "Tümü") }
-                item { RecentlyPlayedRow(items = state.recentlyPlayed) }
+                item { RecentlyPlayedRow(items = state.recentlyPlayed, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
                 item { SectionHeader(title = "Senin için çalma listeleri") }
-                item { PlaylistsForYouRow(items = state.playlistsForYou) }
+                item { PlaylistsForYouRow(items = state.playlistsForYou, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
             }
         }
 
@@ -194,7 +199,10 @@ private fun UserAvatar(initials: String) {
 }
 
 @Composable
-private fun QuickPickGrid(quickPicks: List<QuickPick>) {
+private fun QuickPickGrid(
+    quickPicks: List<QuickPick>,
+    onPlaylistClick: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,7 +212,11 @@ private fun QuickPickGrid(quickPicks: List<QuickPick>) {
         quickPicks.chunked(2).forEach { rowItems ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 rowItems.forEach { item ->
-                    QuickPickCard(item = item, modifier = Modifier.weight(1f))
+                    QuickPickCard(
+                        item = item,
+                        onClick = { onPlaylistClick(item.id) },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
                 if (rowItems.size == 1) {
                     Spacer(Modifier.weight(1f))
@@ -217,13 +229,15 @@ private fun QuickPickGrid(quickPicks: List<QuickPick>) {
 @Composable
 private fun QuickPickCard(
     item: QuickPick,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .height(56.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Artwork(
@@ -275,13 +289,21 @@ private fun SectionHeader(
 }
 /** "Son çalınanlar" yatay scrollable kart listesi. */
 @Composable
-private fun RecentlyPlayedRow(items: List<RecentlyPlayed>) {
+private fun RecentlyPlayedRow(
+    items: List<RecentlyPlayed>,
+    onPlaylistClick: (String) -> Unit
+) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         items(items, key = { it.id }) { item ->
-            Column(modifier = Modifier.width(150.dp)) {
+            Column(
+                modifier = Modifier
+                    .width(150.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onPlaylistClick(item.id) }
+            ) {
                 Artwork(
                     startColor = item.artworkStartColor,
                     endColor = item.artworkEndColor,
@@ -311,13 +333,21 @@ private fun RecentlyPlayedRow(items: List<RecentlyPlayed>) {
 }
 /** "Senin için çalma listeleri" yatay scrollable büyük kart listesi. */
 @Composable
-private fun PlaylistsForYouRow(items: List<PlaylistForYou>) {
+private fun PlaylistsForYouRow(
+    items: List<PlaylistForYou>,
+    onPlaylistClick: (String) -> Unit
+) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         items(items, key = { it.id }) { item ->
-            Column(modifier = Modifier.width(170.dp)) {
+            Column(
+                modifier = Modifier
+                    .width(170.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable { onPlaylistClick(item.id) }
+            ) {
                 Artwork(
                     startColor = item.artworkStartColor,
                     endColor = item.artworkEndColor,
