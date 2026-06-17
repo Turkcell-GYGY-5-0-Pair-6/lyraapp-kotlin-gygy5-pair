@@ -301,7 +301,6 @@ private fun RecentlyPlayedRow(
             Column(
                 modifier = Modifier
                     .width(150.dp)
-                    .clip(RoundedCornerShape(16.dp))
                     .clickable { onPlaylistClick(item.id) }
             ) {
                 Artwork(
@@ -345,7 +344,6 @@ private fun PlaylistsForYouRow(
             Column(
                 modifier = Modifier
                     .width(170.dp)
-                    .clip(RoundedCornerShape(20.dp))
                     .clickable { onPlaylistClick(item.id) }
             ) {
                 Artwork(

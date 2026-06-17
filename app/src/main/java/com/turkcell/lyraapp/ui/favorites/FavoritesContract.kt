@@ -28,4 +28,5 @@ sealed interface FavoritesIntent {
 sealed interface FavoritesEffect {
     data object NavigateBack : FavoritesEffect
     data class ShowError(val message: String) : FavoritesEffect
+    data class NavigateToNowPlaying(val songId: String) : FavoritesEffect
 }

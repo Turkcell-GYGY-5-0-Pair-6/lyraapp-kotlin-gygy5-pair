@@ -28,6 +28,7 @@ import com.turkcell.lyraapp.ui.library.create.CreatePlaylistRoute
 import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
+import com.turkcell.lyraapp.ui.player.NowPlayingRoute
 
 @Composable
 fun LyraNavHost(
@@ -107,7 +108,10 @@ fun LyraNavHost(
             }
             composable(LyraDestination.Favorites.route) {
                 FavoritesRoute(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToNowPlaying = { songId ->
+                        navController.navigate("now_playing/$songId")
+                    }
                 )
             }
             composable(LyraDestination.CreatePlaylist.route) {
@@ -137,6 +141,19 @@ fun LyraNavHost(
                 )
             ) {
                 PlaylistDetailRoute(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToNowPlaying = { songId ->
+                        navController.navigate("now_playing/$songId")
+                    }
+                )
+            }
+            composable(
+                route = LyraDestination.NowPlaying.route,
+                arguments = listOf(
+                    navArgument("songId") { type = NavType.StringType }
+                )
+            ) {
+                NowPlayingRoute(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

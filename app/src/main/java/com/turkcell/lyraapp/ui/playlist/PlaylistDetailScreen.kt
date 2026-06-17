@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -71,6 +72,7 @@ private val PauseIcon: ImageVector by lazy {
 @Composable
 fun PlaylistDetailRoute(
     onNavigateBack: () -> Unit,
+    onNavigateToNowPlaying: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PlaylistDetailViewModel = hiltViewModel()
 ) {
@@ -82,6 +84,7 @@ fun PlaylistDetailRoute(
             when (effect) {
                 PlaylistDetailEffect.NavigateBack -> onNavigateBack()
                 is PlaylistDetailEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
+                is PlaylistDetailEffect.NavigateToNowPlaying -> onNavigateToNowPlaying(effect.songId)
             }
         }
     }
@@ -104,6 +107,7 @@ fun PlaylistDetailScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         if (state.isLoading && state.playlist == null) {

@@ -56,6 +56,7 @@ import com.turkcell.lyraapp.ui.theme.LyraAppTheme
 @Composable
 fun FavoritesRoute(
     onNavigateBack: () -> Unit,
+    onNavigateToNowPlaying: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: FavoritesViewModel = hiltViewModel()
 ) {
@@ -67,6 +68,7 @@ fun FavoritesRoute(
             when (effect) {
                 is FavoritesEffect.NavigateBack -> onNavigateBack()
                 is FavoritesEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
+                is FavoritesEffect.NavigateToNowPlaying -> onNavigateToNowPlaying(effect.songId)
             }
         }
     }

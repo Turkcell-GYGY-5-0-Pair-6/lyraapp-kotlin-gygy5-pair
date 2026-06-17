@@ -80,6 +80,9 @@ class FavoritesViewModel @Inject constructor(
             }
             state.copy(songs = updatedSongs)
         }
+        viewModelScope.launch {
+            _effect.send(FavoritesEffect.NavigateToNowPlaying(songId))
+        }
     }
 
     private fun handleToggleLikeSong(songId: String) {

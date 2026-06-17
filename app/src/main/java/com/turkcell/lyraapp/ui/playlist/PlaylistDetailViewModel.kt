@@ -44,9 +44,9 @@ class PlaylistDetailViewModel @Inject constructor(
             PlaylistDetailIntent.ToggleShuffle -> toggleShuffle()
             PlaylistDetailIntent.PlayPlaylist -> playPlaylist()
             is PlaylistDetailIntent.SongClicked -> {
-                // Şarkıya tıklandığında oynatma davranışı burada simüle edilebilir
-                // veya Now Playing ekranına yönlendirme yapılabilir.
-                // Prototip kapsamında, eğer tıklanan şarkı Neon Sokaklar ise durumunu değiştiririz.
+                viewModelScope.launch {
+                    _effect.send(PlaylistDetailEffect.NavigateToNowPlaying(intent.songId))
+                }
             }
             PlaylistDetailIntent.BackClicked -> {
                 viewModelScope.launch {

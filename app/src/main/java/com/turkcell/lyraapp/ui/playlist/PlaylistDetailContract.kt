@@ -25,4 +25,5 @@ sealed interface PlaylistDetailIntent {
 sealed interface PlaylistDetailEffect {
     data object NavigateBack : PlaylistDetailEffect
     data class ShowError(val message: String) : PlaylistDetailEffect
+    data class NavigateToNowPlaying(val songId: String) : PlaylistDetailEffect
 }
