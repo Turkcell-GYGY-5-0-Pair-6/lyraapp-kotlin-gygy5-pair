@@ -1,6 +1,7 @@
 package com.turkcell.lyraapp.ui.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
 import com.turkcell.lyraapp.ui.player.NowPlayingRoute
+import com.turkcell.lyraapp.ui.player.MiniPlayerRoute
 
 @Composable
 fun LyraNavHost(
@@ -45,122 +47,131 @@ fun LyraNavHost(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            if(isTopLevelRoute(currentRoute)){
+            if (isTopLevelRoute(currentRoute)) {
                 LyraBottomBar(
                     currentRoute = currentRoute,
                     onTabSelected = navController::navigateToTab,
                 )
             }
         },
-
-
-
     ){
         innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = LyraDestination.Login.route,
-            modifier = Modifier.padding(innerPadding),
-        ){
-            composable(LyraDestination.Login.route){
-                LoginRoute(
-                    onNavigateToHome = {navController.navigateToHomeClearingAuth()},
-                    onNavigateToRegister = {
-                        navController.navigate(LyraDestination.Register.route){
-                            launchSingleTop = true
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = LyraDestination.Login.route,
+                modifier = Modifier.padding(innerPadding),
+            ){
+                composable(LyraDestination.Login.route){
+                    LoginRoute(
+                        onNavigateToHome = {navController.navigateToHomeClearingAuth()},
+                        onNavigateToRegister = {
+                            navController.navigate(LyraDestination.Register.route){
+                                launchSingleTop = true
+                            }
                         }
-                    }
-                )
+                    )
+                }
+
+                composable(LyraDestination.Register.route){
+                    RegisterRoute(
+                        onNavigateToHome = { navController.navigateToHomeClearingAuth()},
+                        onNavigateToLogin = {
+                            navController.navigate(LyraDestination.Login.route){
+                                popUpTo(LyraDestination.Login.route) { inclusive = false}
+                                launchSingleTop = true
+                            }
+                        },
+                        onNavigateBack = { navController.popBackStack()},
+                    )
+
+                }
+                composable(LyraDestination.Home.route) {
+                    HomeRoute(
+                        isDarkTheme = isDarkTheme,
+                        onToggleTheme = onToggleTheme,
+                        onNavigateToPlaylistDetail = { playlistId ->
+                            navController.navigate("playlist_detail/$playlistId")
+                        }
+                    )
+                }
+                composable(LyraDestination.Search.route) { SearchRoute() }
+                composable(LyraDestination.Library.route) {
+                    LibraryRoute(
+                        onNavigateToCreatePlaylist = {
+                            navController.navigate(LyraDestination.CreatePlaylist.route)
+                        },
+                        onNavigateToPlaylistDetail = { playlistId ->
+                            navController.navigate("playlist_detail/$playlistId")
+                        }
+                    )
+                }
+                composable(LyraDestination.Favorites.route) {
+                    FavoritesRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToNowPlaying = { songId ->
+                            navController.navigate("now_playing/$songId")
+                        }
+                    )
+                }
+                composable(LyraDestination.CreatePlaylist.route) {
+                    CreatePlaylistRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onSaveSuccess = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+                composable(LyraDestination.Profile.route) {
+                    ProfileRoute(
+                        isDarkTheme = isDarkTheme,
+                        onToggleTheme = onToggleTheme,
+                        onNavigateToLogin = {
+                            navController.navigate(LyraDestination.Login.route) {
+                                popUpTo(LyraDestination.Home.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+                composable(
+                    route = LyraDestination.PlaylistDetail.route,
+                    arguments = listOf(
+                        navArgument("playlistId") { type = NavType.StringType }
+                    )
+                ) {
+                    PlaylistDetailRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToNowPlaying = { songId ->
+                            navController.navigate("now_playing/$songId")
+                        }
+                    )
+                }
+                composable(
+                    route = LyraDestination.NowPlaying.route,
+                    arguments = listOf(
+                        navArgument("songId") { type = NavType.StringType }
+                    )
+                ) {
+                    NowPlayingRoute(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
 
-            composable(LyraDestination.Register.route){
-                RegisterRoute(
-                    onNavigateToHome = { navController.navigateToHomeClearingAuth()},
-                    onNavigateToLogin = {
-                        navController.navigate(LyraDestination.Login.route){
-                            popUpTo(LyraDestination.Login.route) { inclusive = false}
+            if (shouldShowMiniPlayer(currentRoute)) {
+                MiniPlayerRoute(
+                    onCardClick = { songId ->
+                        navController.navigate("now_playing/$songId") {
                             launchSingleTop = true
                         }
                     },
-                    onNavigateBack = { navController.popBackStack()},
-                )
-
-            }
-            composable(LyraDestination.Home.route) {
-                HomeRoute(
-                    isDarkTheme = isDarkTheme,
-                    onToggleTheme = onToggleTheme,
-                    onNavigateToPlaylistDetail = { playlistId ->
-                        navController.navigate("playlist_detail/$playlistId")
-                    }
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
-            composable(LyraDestination.Search.route) { SearchRoute() }
-            composable(LyraDestination.Library.route) {
-                LibraryRoute(
-                    onNavigateToCreatePlaylist = {
-                        navController.navigate(LyraDestination.CreatePlaylist.route)
-                    },
-                    onNavigateToPlaylistDetail = { playlistId ->
-                        navController.navigate("playlist_detail/$playlistId")
-                    }
-                )
-            }
-            composable(LyraDestination.Favorites.route) {
-                FavoritesRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToNowPlaying = { songId ->
-                        navController.navigate("now_playing/$songId")
-                    }
-                )
-            }
-            composable(LyraDestination.CreatePlaylist.route) {
-                CreatePlaylistRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onSaveSuccess = {
-                        navController.popBackStack()
-                    }
-                )
-            }
-            composable(LyraDestination.Profile.route) {
-                ProfileRoute(
-                    isDarkTheme = isDarkTheme,
-                    onToggleTheme = onToggleTheme,
-                    onNavigateToLogin = {
-                        navController.navigate(LyraDestination.Login.route) {
-                            popUpTo(LyraDestination.Home.route) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                )
-            }
-            composable(
-                route = LyraDestination.PlaylistDetail.route,
-                arguments = listOf(
-                    navArgument("playlistId") { type = NavType.StringType }
-                )
-            ) {
-                PlaylistDetailRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToNowPlaying = { songId ->
-                        navController.navigate("now_playing/$songId")
-                    }
-                )
-            }
-            composable(
-                route = LyraDestination.NowPlaying.route,
-                arguments = listOf(
-                    navArgument("songId") { type = NavType.StringType }
-                )
-            ) {
-                NowPlayingRoute(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-
         }
-
     }
 }
 
@@ -203,4 +214,13 @@ private fun PlaceholderScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+private fun shouldShowMiniPlayer(route: String?): Boolean {
+    if (route == null) return false
+    val isAuth = route == LyraDestination.Login.route || route == LyraDestination.Register.route
+    val isNowPlaying = route.startsWith("now_playing")
+    val isProfile = route == LyraDestination.Profile.route
+    val isPlaylistDetail = route == LyraDestination.PlaylistDetail.route || route.startsWith("playlist_detail")
+    return !isAuth && !isNowPlaying && !isProfile && !isPlaylistDetail
 }

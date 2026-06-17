@@ -30,6 +30,13 @@ class NowPlayingViewModel @Inject constructor(
     private val songId: String? = savedStateHandle["songId"]
 
     init {
+        viewModelScope.launch {
+            playerRepository.playbackStateFlow.collect { state ->
+                state?.let { s ->
+                    _uiState.update { it.copy(playbackState = s) }
+                }
+            }
+        }
         songId?.let {
             onIntent(NowPlayingIntent.LoadSong(it))
         }
@@ -73,9 +80,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun togglePlayPause() {
         viewModelScope.launch {
-            playerRepository.togglePlayPause().onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.togglePlayPause().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Oynatma durumu değiştirilemedi."))
             }
         }
@@ -83,9 +88,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun toggleLike() {
         viewModelScope.launch {
-            playerRepository.toggleLike().onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.toggleLike().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Beğeni durumu değiştirilemedi."))
             }
         }
@@ -93,9 +96,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun toggleShuffle() {
         viewModelScope.launch {
-            playerRepository.toggleShuffle().onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.toggleShuffle().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Karıştırma durumu değiştirilemedi."))
             }
         }
@@ -103,9 +104,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun toggleRepeat() {
         viewModelScope.launch {
-            playerRepository.toggleRepeat().onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.toggleRepeat().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Tekrarlama durumu değiştirilemedi."))
             }
         }
@@ -113,9 +112,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun seekTo(progressMs: Long) {
         viewModelScope.launch {
-            playerRepository.seekTo(progressMs).onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.seekTo(progressMs).onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Konum değiştirilemedi."))
             }
         }
@@ -123,9 +120,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun skipToNext() {
         viewModelScope.launch {
-            playerRepository.skipToNext().onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.skipToNext().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Sonraki şarkıya geçilemedi."))
             }
         }
@@ -133,18 +128,9 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun skipToPrevious() {
         viewModelScope.launch {
-            playerRepository.skipToPrevious().onSuccess {
-                syncPlaybackState()
-            }.onFailure { error ->
+            playerRepository.skipToPrevious().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Önceki şarkıya geçilemedi."))
             }
-        }
-    }
-
-    private suspend fun syncPlaybackState() {
-        val currentId = _uiState.value.playbackState?.songId ?: songId ?: return
-        playerRepository.getPlaybackState(currentId).onSuccess { state ->
-            _uiState.update { it.copy(playbackState = state) }
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.turkcell.lyraapp.data.player
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,35 +27,50 @@ class FakePlayerRepository @Inject constructor() : PlayerRepository {
         artworkEndColor = 0xFF8A5526
     )
 
+    private val _playbackStateFlow = MutableStateFlow<PlaybackState?>(null)
+    override val playbackStateFlow: Flow<PlaybackState?> = _playbackStateFlow.asStateFlow()
+
+    init {
+        _playbackStateFlow.value = currentState
+    }
+
+    private fun updateState(newState: PlaybackState) {
+        currentState = newState
+        _playbackStateFlow.value = newState
+    }
+
     override suspend fun getPlaybackState(songId: String): Result<PlaybackState> {
         delay(400L)
-        // Eğer songId "fav-4" veya "song-1" (Neon Sokaklar) değilse, isimleri gelen songId'ye göre güncelleyebiliriz
-        // ama görsel prototip için ekran görüntüsündeki Neon Sokaklar detaylarını koruyoruz.
-        currentState = currentState.copy(songId = songId)
-        return Result.success(currentState)
+        val updated = currentState.copy(songId = songId)
+        updateState(updated)
+        return Result.success(updated)
     }
 
     override suspend fun togglePlayPause(): Result<Unit> {
         delay(100L)
-        currentState = currentState.copy(isPlaying = !currentState.isPlaying)
+        val updated = currentState.copy(isPlaying = !currentState.isPlaying)
+        updateState(updated)
         return Result.success(Unit)
     }
 
     override suspend fun toggleLike(): Result<Unit> {
         delay(100L)
-        currentState = currentState.copy(isLiked = !currentState.isLiked)
+        val updated = currentState.copy(isLiked = !currentState.isLiked)
+        updateState(updated)
         return Result.success(Unit)
     }
 
     override suspend fun toggleShuffle(): Result<Unit> {
         delay(100L)
-        currentState = currentState.copy(isShuffleEnabled = !currentState.isShuffleEnabled)
+        val updated = currentState.copy(isShuffleEnabled = !currentState.isShuffleEnabled)
+        updateState(updated)
         return Result.success(Unit)
     }
 
     override suspend fun toggleRepeat(): Result<Unit> {
         delay(100L)
-        currentState = currentState.copy(isRepeatEnabled = !currentState.isRepeatEnabled)
+        val updated = currentState.copy(isRepeatEnabled = !currentState.isRepeatEnabled)
+        updateState(updated)
         return Result.success(Unit)
     }
 
@@ -62,17 +80,17 @@ class FakePlayerRepository @Inject constructor() : PlayerRepository {
         val min = progressSeconds / 60
         val sec = progressSeconds % 60
         val progressText = String.format("%d:%02d", min, sec)
-        currentState = currentState.copy(
+        val updated = currentState.copy(
             currentProgressMs = progressMs,
             currentProgressText = progressText
         )
+        updateState(updated)
         return Result.success(Unit)
     }
 
     override suspend fun skipToNext(): Result<Unit> {
         delay(200L)
-        // Sonraki şarkıyı simüle et
-        currentState = currentState.copy(
+        val updated = currentState.copy(
             songId = "next-song",
             title = "Gece Yarısı",
             artist = "Mavi Deniz",
@@ -84,13 +102,13 @@ class FakePlayerRepository @Inject constructor() : PlayerRepository {
             artworkStartColor = 0xFF6FBF5A,
             artworkEndColor = 0xFF356B2A
         )
+        updateState(updated)
         return Result.success(Unit)
     }
 
     override suspend fun skipToPrevious(): Result<Unit> {
         delay(200L)
-        // Önceki şarkıyı simüle et
-        currentState = currentState.copy(
+        val updated = currentState.copy(
             songId = "prev-song",
             title = "Yıldız Tozu",
             artist = "Polaris",
@@ -102,6 +120,7 @@ class FakePlayerRepository @Inject constructor() : PlayerRepository {
             artworkStartColor = 0xFF3D5A80,
             artworkEndColor = 0xFF1B2A45
         )
+        updateState(updated)
         return Result.success(Unit)
     }
 }

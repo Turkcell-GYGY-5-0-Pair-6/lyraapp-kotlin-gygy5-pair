@@ -1,5 +1,7 @@
 package com.turkcell.lyraapp.data.player
 
+import kotlinx.coroutines.flow.Flow
+
 data class PlaybackState(
     val songId: String,
     val title: String,
@@ -18,6 +20,7 @@ data class PlaybackState(
 )
 
 interface PlayerRepository {
+    val playbackStateFlow: Flow<PlaybackState?>
     suspend fun getPlaybackState(songId: String): Result<PlaybackState>
     suspend fun togglePlayPause(): Result<Unit>
     suspend fun toggleLike(): Result<Unit>
