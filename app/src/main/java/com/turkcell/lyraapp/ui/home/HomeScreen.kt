@@ -122,6 +122,7 @@ fun HomeScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
                     .statusBarsPadding(),
+                contentPadding = PaddingValues(bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item { HomeHeader(greeting = state.greeting, userInitials = state.userInitials, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
@@ -295,19 +296,19 @@ private fun RecentlyPlayedRow(
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         items(items, key = { it.id }) { item ->
             Column(
                 modifier = Modifier
-                    .width(150.dp)
+                    .width(110.dp)
                     .clickable { onPlaylistClick(item.id) }
             ) {
                 Artwork(
                     startColor = item.artworkStartColor,
                     endColor = item.artworkEndColor,
                     modifier = Modifier
-                        .size(150.dp)
+                        .size(100.dp)
                         .clip(RoundedCornerShape(16.dp)),
                 )
                 Spacer(Modifier.height(8.dp))
@@ -338,20 +339,20 @@ private fun PlaylistsForYouRow(
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         items(items, key = { it.id }) { item ->
             Column(
                 modifier = Modifier
-                    .width(170.dp)
+                    .width(110.dp)
                     .clickable { onPlaylistClick(item.id) }
             ) {
                 Artwork(
                     startColor = item.artworkStartColor,
                     endColor = item.artworkEndColor,
                     modifier = Modifier
-                        .size(170.dp)
-                        .clip(RoundedCornerShape(20.dp)),
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(16.dp)),
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(

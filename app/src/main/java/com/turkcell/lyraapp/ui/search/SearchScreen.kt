@@ -93,7 +93,7 @@ fun SearchScreen(
                 .padding(innerPadding)
                 .statusBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(18.dp),
-            contentPadding = PaddingValues(bottom = 20.dp),
+            contentPadding = PaddingValues(bottom = 88.dp),
         ) {
             item {
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {

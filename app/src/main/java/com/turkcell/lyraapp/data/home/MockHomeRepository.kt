@@ -37,12 +37,17 @@ class MockHomeRepository @Inject constructor(
             RecentlyPlayed("rp-1", "Neon Sokaklar", "Şehir Işıkları", 0xFFD98E4A, 0xFF8A5526),
             RecentlyPlayed("rp-2", "Derin Mavi", "Okyanus", 0xFF6FBF5A, 0xFF356B2A),
             RecentlyPlayed("rp-3", "Yıldız Tozu", "Polaris", 0xFF3D5A80, 0xFF1B2A45),
+            RecentlyPlayed("rp-4", "Yıldız Tozu", "Polaris", 0xFF3D5A80, 0xFF1B2A45),
+            RecentlyPlayed("rp-5", "Yıldız Tozu", "Polaris", 0xFF3D5A80, 0xFF1B2A45),
+            RecentlyPlayed("rp-6", "Yıldız Tozu", "Polaris", 0xFF3D5A80, 0xFF1B2A45),
         )
 
         val PLAYLISTS_FOR_YOU = listOf(
             PlaylistForYou("pl-1", "Haftalık Keşif", 0xFF9B7FC4, 0xFF5A4480),
             PlaylistForYou("pl-2", "Sakin Akşamlar", 0xFF6B5FB8, 0xFF3A3270),
             PlaylistForYou("pl-3", "Enerji Ver", 0xFF3FAE9C, 0xFF1E5D52),
+            PlaylistForYou("pl-4", "Enerji Ver 2", 0xFF3FAE9C, 0xFF1E5D52),
+            PlaylistForYou("pl-5", "Enerji Ver 3", 0xFF3FAE9C, 0xFF1E5D52),
         )
     }
 }

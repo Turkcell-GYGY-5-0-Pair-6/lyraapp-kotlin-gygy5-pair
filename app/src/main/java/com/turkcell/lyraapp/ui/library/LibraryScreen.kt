@@ -249,7 +249,7 @@ fun LibraryScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    contentPadding = PaddingValues(bottom = 88.dp)
                 ) {
                     items(state.filteredPlaylists, key = { it.id }) { item ->
                         LibraryPlaylistItem(item = item, onClick = { onIntent(LibraryIntent.PlaylistClicked(item.id)) })
