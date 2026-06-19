@@ -33,6 +33,9 @@ class HomeViewModel @Inject constructor(
     fun onIntent(intent: HomeIntent) {
         when (intent) {
             is HomeIntent.Retry -> loadFeed()
+            is HomeIntent.SongSelected -> viewModelScope.launch {
+                _effect.send(HomeEffect.NavigateToNowPlaying(intent.song.id))
+            }
             is HomeIntent.PlaylistClicked -> {
                 viewModelScope.launch {
                     _effect.send(HomeEffect.NavigateToPlaylistDetail(intent.playlistId))
@@ -52,6 +55,7 @@ class HomeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             userInitials = feed.userInitials,
+                            songs = feed.songs,
                             quickPicks = feed.quickPicks,
                             recentlyPlayed = feed.recentlyPlayed,
                             playlistsForYou = feed.playlistsForYou,

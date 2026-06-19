@@ -1,7 +1,7 @@
 package com.turkcell.lyraapp.di
 
+import com.turkcell.lyraapp.data.player.DefaultPlayerRepository
 import com.turkcell.lyraapp.data.player.PlayerRepository
-import com.turkcell.lyraapp.data.player.FakePlayerRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -14,7 +14,5 @@ abstract class PlayerModule {
 
     @Binds
     @Singleton
-    abstract fun bindPlayerRepository(
-        fakePlayerRepository: FakePlayerRepository
-    ): PlayerRepository
+    abstract fun bindPlayerRepository(impl: DefaultPlayerRepository): PlayerRepository
 }

@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.turkcell.lyraapp.data.home.HomeSong
 import com.turkcell.lyraapp.data.home.PlaylistForYou
 import com.turkcell.lyraapp.data.home.QuickPick
 import com.turkcell.lyraapp.data.home.RecentlyPlayed
@@ -52,6 +53,7 @@ import com.turkcell.lyraapp.ui.icons.LyraIcons
 
 @Composable
 fun HomeRoute(
+    onSongClick: (String) -> Unit,
     onNavigateToPlaylistDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
     isDarkTheme: Boolean,
@@ -77,6 +79,8 @@ fun HomeRoute(
                 is HomeEffect.NavigateToPlaylistDetail -> {
                     onNavigateToPlaylistDetail(effect.playlistId)
                 }
+                is HomeEffect.NavigateToNowPlaying ->
+                    onSongClick(effect.songId)
             }
         }
     }
@@ -126,6 +130,13 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item { HomeHeader(greeting = state.greeting, userInitials = state.userInitials, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
+                item { SectionHeader(title = "Şarkılar") }
+                items(state.songs, key = { it.id }) { song ->
+                    SongRow(
+                        song = song,
+                        onClick = { onIntent(HomeIntent.SongSelected(song)) },
+                    )
+                }
                 item { QuickPickGrid(quickPicks = state.quickPicks, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
                 item { SectionHeader(title = "Son çalınanlar", trailingText = "Tümü") }
                 item { RecentlyPlayedRow(items = state.recentlyPlayed, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
@@ -382,4 +393,48 @@ private fun Artwork(
                 ),
             ),
     )
+}
+
+/**
+ * API'dan gelen tek bir şarkı satırı: küçük gradyan kapak + başlık ve sanatçı.
+ *
+ * Bu fazda satır davranışsızdır (tıklama/oynatma sonraki faza bırakılmıştır).
+ */
+@Composable
+private fun SongRow(
+    song: HomeSong,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Artwork(
+            startColor = song.artworkStartColor,
+            endColor = song.artworkEndColor,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(10.dp)),
+        )
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(
+                text = song.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = song.artist,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
 }

@@ -1,12 +1,19 @@
 package com.turkcell.lyraapp.data.player
 
 import kotlinx.coroutines.flow.Flow
+import androidx.media3.exoplayer.ExoPlayer
 
+/**
+ * Oynatma için imzalı stream URL'si sağlayan veri kaynağı soyutlaması.
+ *
+ * ExoPlayer'a verilecek URL backend tarafından kısa ömürlü (signed) üretildiğinden,
+ * oynatmadan hemen önce alınır (bkz. docs/api/openapi.json — /songs/{id}/stream-url).
+ */
 data class PlaybackState(
     val songId: String,
     val title: String,
     val artist: String,
-    val albumName: String, // e.g. "Gece Vardiyası" (mockup says Gece Vardiyası)
+    val albumName: String, // e.g. "Gece Vardiyası"
     val durationText: String, // e.g. "3:43"
     val durationMs: Long,
     val currentProgressText: String, // e.g. "1:33"
@@ -20,8 +27,11 @@ data class PlaybackState(
 )
 
 interface PlayerRepository {
+    val player: ExoPlayer
     val playbackStateFlow: Flow<PlaybackState?>
+    fun setCurrentSongId(songId: String)
     suspend fun getPlaybackState(songId: String): Result<PlaybackState>
+    suspend fun getStreamUrl(songId: String): Result<String>
     suspend fun togglePlayPause(): Result<Unit>
     suspend fun toggleLike(): Result<Unit>
     suspend fun toggleShuffle(): Result<Unit>
