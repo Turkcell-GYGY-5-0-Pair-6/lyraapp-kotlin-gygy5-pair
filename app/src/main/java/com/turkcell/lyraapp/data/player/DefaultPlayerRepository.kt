@@ -1,8 +1,11 @@
 package com.turkcell.lyraapp.data.player
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.turkcell.lyraapp.data.songs.SongDto
@@ -56,6 +59,7 @@ class DefaultPlayerRepository @Inject constructor(
             updatePlaybackState()
             if (isPlaying) {
                 startProgressPolling()
+                startPlaybackService()
             } else {
                 stopProgressPolling()
             }
@@ -157,13 +161,34 @@ class DefaultPlayerRepository @Inject constructor(
 
             if (currentSongId != songId) {
                 currentSongId = songId
-                player.setMediaItem(MediaItem.fromUri(Uri.parse(streamUrl)))
+                
+                val mediaMetadata = MediaMetadata.Builder()
+                    .setTitle(song.title)
+                    .setArtist(song.artist)
+                    .setAlbumTitle(song.album ?: "Lyra Album")
+                    .build()
+
+                val mediaItem = MediaItem.Builder()
+                    .setUri(Uri.parse(streamUrl))
+                    .setMediaMetadata(mediaMetadata)
+                    .build()
+
+                player.setMediaItem(mediaItem)
                 player.prepare()
             }
             player.play()
 
             updatePlaybackState()
             _playbackStateFlow.value!!
+        }
+    }
+
+    private fun startPlaybackService() {
+        try {
+            val intent = Intent(context, PlaybackService::class.java)
+            context.startService(intent)
+        } catch (e: Exception) {
+            // Gracefully ignore service startup failures in background
         }
     }
 
