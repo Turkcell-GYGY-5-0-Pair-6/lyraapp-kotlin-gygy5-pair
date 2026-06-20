@@ -1,7 +1,7 @@
 package com.turkcell.lyraapp.di
 
 import com.turkcell.lyraapp.data.auth.AuthRepository
-import com.turkcell.lyraapp.data.auth.FakeAuthRepository
+import com.turkcell.lyraapp.data.auth.AuthRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * [AuthRepository] arayüzünü somut implementasyonuna ([FakeAuthRepository]) bağlar.
+ * [AuthRepository] arayüzünü somut implementasyonuna ([AuthRepositoryImpl]) bağlar.
  *
  * `@Binds` ile yapıldığından Hilt fazladan kod üretmez; gerçek API implementasyonu
  * eklendiğinde yalnızca buradaki bağlama hedefi değiştirilir.
@@ -20,5 +20,5 @@ import javax.inject.Singleton
 abstract class AuthModule{
     @Binds
     @Singleton
-    abstract fun bindAuthRepository(impl: FakeAuthRepository): AuthRepository
+    abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
 }

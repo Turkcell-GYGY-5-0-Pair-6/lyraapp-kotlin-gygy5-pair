@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -130,14 +131,15 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item { HomeHeader(greeting = state.greeting, userInitials = state.userInitials, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme) }
-                item { SectionHeader(title = "Şarkılar") }
-                items(state.songs, key = { it.id }) { song ->
-                    SongRow(
-                        song = song,
-                        onClick = { onIntent(HomeIntent.SongSelected(song)) },
+                //item { SectionHeader(title = "Önerilen Şarkılar") }
+                item {
+                    SongGrid(
+                        songs = state.songs,
+                        onSongClick = { song -> onIntent(HomeIntent.SongSelected(song)) }
                     )
                 }
-                item { QuickPickGrid(quickPicks = state.quickPicks, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
+                /*
+                item { QuickPickGrid(quickPicks = state.quickPicks, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }*/
                 item { SectionHeader(title = "Son çalınanlar", trailingText = "Tümü") }
                 item { RecentlyPlayedRow(items = state.recentlyPlayed, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
                 item { SectionHeader(title = "Senin için çalma listeleri") }
@@ -420,6 +422,78 @@ private fun SongRow(
                 .clip(RoundedCornerShape(10.dp)),
         )
         Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(
+                text = song.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = song.artist,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SongGrid(
+    songs: List<HomeSong>,
+    onSongClick: (HomeSong) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        songs.chunked(2).forEach { rowSongs ->
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                rowSongs.forEach { song ->
+                    SongGridItem(
+                        song = song,
+                        onClick = { onSongClick(song) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (rowSongs.size == 1) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SongGridItem(
+    song: HomeSong,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Artwork(
+            startColor = song.artworkStartColor,
+            endColor = song.artworkEndColor,
+            modifier = Modifier
+                .width(56.dp)
+                .fillMaxHeight(),
+        )
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp),
+        ) {
             Text(
                 text = song.title,
                 style = MaterialTheme.typography.titleSmall,

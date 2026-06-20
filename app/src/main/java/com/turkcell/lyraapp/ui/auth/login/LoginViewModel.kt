@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.turkcell.lyraapp.data.auth.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,57 +16,116 @@ import javax.inject.Inject
 
 /**
  * Login ekranının MVI ViewModel'i.
- *
- * Tek giriş noktası [onIntent]'tir. Durum [uiState] üzerinden gözlemlenir; tek seferlik
- * olaylar [effect] kanalından akar.
  */
-
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-): ViewModel(){
+) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<LoginEffect>(Channel.BUFFERED)
     val effect: Flow<LoginEffect> = _effect.receiveAsFlow()
 
-    fun onIntent(intent: LoginIntent){
-        when(intent){
-            is LoginIntent.PhoneNumberChanged -> updateForm { it.copy(phoneNumber = intent.value)}
-            is LoginIntent.PasswordChanged -> updateForm { it.copy(password = intent.value)}
-            is LoginIntent.TogglePasswordVisibility -> _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
-            is LoginIntent.Submit -> submit()
-            is LoginIntent.RegisterClicked -> viewModelScope.launch {
-                _effect.send(LoginEffect.NavigateToRegister)
+    fun onIntent(intent: LoginIntent) {
+        when (intent) {
+            is LoginIntent.PhoneNumberChanged -> updateForm { it.copy(phoneNumber = intent.value) }
+            is LoginIntent.VerificationCodeChanged -> updateForm { it.copy(verificationCode = intent.value) }
+            is LoginIntent.SubmitPhone -> submitPhone()
+            is LoginIntent.SubmitVerify -> submitVerify()
+            is LoginIntent.ResendOtp -> resendOtp()
+            is LoginIntent.BackToPhoneEntry -> _uiState.update {
+                it.copy(isOtpSent = false, verificationCode = "")
             }
         }
     }
 
-    private fun updateForm(transform: (LoginUiState) -> LoginUiState){
+    private fun updateForm(transform: (LoginUiState) -> LoginUiState) {
         _uiState.update { current ->
             val updated = transform(current)
-            updated.copy(isLoginEnabled = updated.isFormValid())
+            updated.copy(
+                isRequestOtpEnabled = updated.phoneNumber.isValidPhoneNumber(),
+                isVerifyOtpEnabled = updated.verificationCode.isValidVerificationCode()
+            )
         }
     }
 
-    private fun submit(){
+    private fun submitPhone() {
         val state = _uiState.value
-        if (!state.isLoginEnabled || state.isLoading) return
+        if (!state.isRequestOtpEnabled || state.isLoading) return
 
-        viewModelScope.launch{
-            _uiState.update { it.copy(isLoading = true)}
-            val result = authRepository.login(state.phoneNumber, state.password)
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val formattedPhone = "+90" + state.phoneNumber.filter { it.isDigit() }
+            val result = authRepository.requestOtp(formattedPhone)
             _uiState.update { it.copy(isLoading = false) }
 
             result
-                .onSuccess { _effect.send(LoginEffect.NavigateToHome) }
+                .onSuccess { data ->
+                    _uiState.update {
+                        it.copy(
+                            isOtpSent = true,
+                            firstTime = data.firstTime
+                        )
+                    }
+                }
                 .onFailure { error ->
-                    _effect.send(LoginEffect.ShowError(error.message ?: "Giriş başarısız."))
+                    _effect.send(LoginEffect.ShowError(error.message ?: "Kod gönderme başarısız."))
+                }
+        }
+    }
+
+    private fun resendOtp() {
+        val state = _uiState.value
+        if (state.isLoading) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val formattedPhone = "+90" + state.phoneNumber.filter { it.isDigit() }
+            val result = authRepository.requestOtp(formattedPhone)
+            _uiState.update { it.copy(isLoading = false) }
+
+            result
+                .onSuccess { data ->
+                    _uiState.update { it.copy(firstTime = data.firstTime) }
+                    _effect.send(LoginEffect.ShowError("Kod tekrar gönderildi."))
+                }
+                .onFailure { error ->
+                    _effect.send(LoginEffect.ShowError(error.message ?: "Kod gönderme başarısız."))
+                }
+        }
+    }
+
+    private fun submitVerify() {
+        val state = _uiState.value
+        if (!state.isVerifyOtpEnabled || state.isLoading) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val formattedPhone = "+90" + state.phoneNumber.filter { it.isDigit() }
+            val result = authRepository.verifyOtp(formattedPhone, state.verificationCode)
+            _uiState.update { it.copy(isLoading = false) }
+
+            result
+                .onSuccess {
+                    if (state.firstTime) {
+                        _effect.send(LoginEffect.NavigateToRegister)
+                    } else {
+                        _effect.send(LoginEffect.NavigateToHome)
+                    }
+                }
+                .onFailure { error ->
+                    _effect.send(LoginEffect.ShowError(error.message ?: "Kod doğrulama başarısız."))
                 }
         }
     }
 }
 
-private fun LoginUiState.isFormValid(): Boolean =
-    phoneNumber.isNotBlank() && password.isNotBlank()
+private fun String.isValidPhoneNumber(): Boolean {
+    val digits = filter { it.isDigit() }
+    return digits.length == 10
+}
+
+private fun String.isValidVerificationCode(): Boolean {
+    return filter { it.isDigit() }.length == 6
+}

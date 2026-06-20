@@ -2,6 +2,7 @@ package com.turkcell.lyraapp.data.network
 
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.turkcell.lyraapp.data.songs.SongsApi
+import com.turkcell.lyraapp.data.auth.AuthApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -55,4 +56,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideSongsApi(retrofit: Retrofit): SongsApi = retrofit.create(SongsApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideAuthApi(retrofit: Retrofit): AuthApi = retrofit.create(AuthApi::class.java)
 }

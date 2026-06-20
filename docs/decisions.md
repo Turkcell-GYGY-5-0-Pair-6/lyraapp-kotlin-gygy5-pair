@@ -98,3 +98,21 @@
 
 - Sebep: Backend REST API sözleşmesi tanımlı değil (`agents.md` §2.2 uydurmak yasak). Gerçek API
   geldiğinde yalnızca implementasyon ve DI bağlaması değişir; ViewModel/Contract etkilenmez.
+
+
+### Şifresiz OTP Giriş/Kayıt Katmanı Entegrasyonu
+
+- Karar: **AuthRepositoryImpl** ile gerçek API entegrasyonu ve geçici olarak DataStore yerine bellekte token saklama.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: API spesifikasyonu OTP flow olarak güncellendi ve backend hazır duruma getirildi. SMS doğrulama adımı için sahte SMS altyapısı bulunsa da API tamamen gerçek çalışmaktadır. Kullanıcı bilgileri `/me/update-informations` uç noktasına doğrulanan JWT access token ile gönderilir. Token bellekte singleton repository düzeyinde saklanır.
+
+
+### Önerilen Şarkılar API Entegrasyonu ve Arayüz Güncellemesi
+
+- Karar: Ana sayfadaki şarkı listesinin `/api/v1/me/recommendations` adresinden çekilmesi ve grid şeklinde listelenmesi.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: Kullanıcıya özel önerilen şarkıları listelemek ve tasarımı daha zengin, modern bir grid yapısına dönüştürmek.

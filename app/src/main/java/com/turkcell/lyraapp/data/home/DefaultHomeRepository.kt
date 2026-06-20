@@ -1,5 +1,6 @@
 package com.turkcell.lyraapp.data.home
 
+import com.turkcell.lyraapp.data.auth.AuthRepository
 import com.turkcell.lyraapp.data.songs.SongDto
 import com.turkcell.lyraapp.data.songs.SongsApi
 import javax.inject.Inject
@@ -19,10 +20,17 @@ import kotlin.math.roundToInt
  */
 class DefaultHomeRepository @Inject constructor(
     private val songsApi: SongsApi,
+    private val authRepository: AuthRepository,
 ) : HomeRepository {
 
     override suspend fun getHomeFeed(): Result<HomeFeed> = runCatching {
-        val songs = songsApi.getSongs(limit = SONGS_PAGE_SIZE).data.map { it.toHomeSong() }
+        val token = authRepository.getAccessToken()
+        val songDtos = if (token != null) {
+            songsApi.getRecommendations(authorization = "Bearer $token", limit = SONGS_PAGE_SIZE).data
+        } else {
+            songsApi.getSongs(limit = SONGS_PAGE_SIZE).data
+        }
+        val songs = songDtos.map { it.toHomeSong() }
         HomeFeed(
             userInitials = USER_INITIALS,
             songs = songs,

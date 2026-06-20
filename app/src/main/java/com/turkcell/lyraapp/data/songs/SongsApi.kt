@@ -4,6 +4,9 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+import retrofit2.http.Header
+import kotlinx.serialization.Serializable
+
 /**
  * Streaming API'nin şarkı uç noktaları için Retrofit arayüzü.
  *
@@ -36,4 +39,18 @@ interface SongsApi {
      */
     @GET("api/v1/songs/{id}/stream-url")
     suspend fun getStreamUrl(@Path("id") id: String): StreamUrlEnvelope
+
+    /**
+     * Kullanıcıya özel önerilen şarkıları listeler.
+     */
+    @GET("api/v1/me/recommendations")
+    suspend fun getRecommendations(
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int? = null,
+    ): RecommendationsResponseDto
 }
+
+@Serializable
+data class RecommendationsResponseDto(
+    val data: List<SongDto> = emptyList(),
+)

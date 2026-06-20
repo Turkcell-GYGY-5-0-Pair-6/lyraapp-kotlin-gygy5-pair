@@ -7,49 +7,34 @@ package com.turkcell.lyraapp.ui.auth.login
 
 /**
  * Ekranın gözlemlenebilir tüm durumu. Tek bir immutable kaynak (single source of truth).
- *
- * [isLoginEnabled] doğrudan kullanıcı tarafından set edilmez; alan değişimlerinde
- * [LoginViewModel] tarafından türetilir.
  */
-
 data class LoginUiState(
     val phoneNumber: String = "",
-    val password: String = "",
-    val isPasswordVisible: Boolean = false,
+    val verificationCode: String = "",
+    val isOtpSent: Boolean = false,
+    val firstTime: Boolean = false,
     val isLoading: Boolean = false,
-    val isLoginEnabled: Boolean = false,
-
+    val isRequestOtpEnabled: Boolean = false,
+    val isVerifyOtpEnabled: Boolean = false,
 )
 
 /**
- * Login ekranının MVI sözleşmesi: State (durum), Intent (kullanıcı niyeti) ve
- * Effect (tek seferlik olay) tek dosyada toplanmıştır.
+ * Kullanıcıdan gelen niyetler.
  */
-
-/**
- * Ekranın gözlemlenebilir tüm durumu. Tek bir immutable kaynak (single source of truth).
- *
- * [isLoginEnabled] doğrudan kullanıcı tarafından set edilmez; alan değişimlerinde
- * [LoginViewModel] tarafından türetilir.
- */
-
 sealed interface LoginIntent {
     data class PhoneNumberChanged(val value: String) : LoginIntent
-    data class PasswordChanged(val value: String) : LoginIntent
-    data object TogglePasswordVisibility : LoginIntent
-    data object Submit: LoginIntent
-
-    data object RegisterClicked: LoginIntent
-
+    data class VerificationCodeChanged(val value: String) : LoginIntent
+    data object SubmitPhone : LoginIntent
+    data object SubmitVerify : LoginIntent
+    data object ResendOtp : LoginIntent
+    data object BackToPhoneEntry : LoginIntent
 }
-/**
- * Tek seferlik (one-shot) olaylar: navigasyon, snackbar vb. State içinde tutulmaz,
- * böylece konfigürasyon değişiminde tekrar tetiklenmez.
- */
 
+/**
+ * Tek seferlik (one-shot) olaylar: navigasyon, snackbar vb.
+ */
 sealed interface LoginEffect {
     data object NavigateToHome : LoginEffect
-
-    data object NavigateToRegister: LoginEffect
+    data object NavigateToRegister : LoginEffect
     data class ShowError(val message: String) : LoginEffect
 }

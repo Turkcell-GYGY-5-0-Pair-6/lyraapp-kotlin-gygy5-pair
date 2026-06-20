@@ -15,11 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Register ekranının MVI ViewModel'i.
- *
- * Tek giriş noktası [onIntent]'tir. Durum [uiState] üzerinden gözlemlenir; tek seferlik
- * olaylar [effect] kanalından akar. Navigasyon kararları Effect'e dönüştürülür; ViewModel
- * içinde hiçbir Android/Compose/navigasyon bağımlılığı bulunmaz.
+ * Register ("Bilgilerini tamamla") ekranının MVI ViewModel'i.
  */
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
@@ -36,45 +32,58 @@ class RegisterViewModel @Inject constructor(
         when (intent) {
             is RegisterIntent.FirstNameChanged -> updateForm { it.copy(firstName = intent.value) }
             is RegisterIntent.LastNameChanged -> updateForm { it.copy(lastName = intent.value) }
-            is RegisterIntent.PhoneNumberChanged -> updateForm { it.copy(phoneNumber = intent.value) }
-            is RegisterIntent.PasswordChanged -> updateForm { it.copy(password = intent.value) }
-            is RegisterIntent.TermsAcceptedChanged -> updateForm { it.copy(isTermsAccepted = intent.value) }
-            is RegisterIntent.TogglePasswordVisibility -> _uiState.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
+            is RegisterIntent.BirthDayChanged -> {
+                val filtered = intent.value.filter { it.isDigit() }
+                if (filtered.length <= 2) {
+                    updateForm { it.copy(birthDay = filtered) }
+                }
+            }
+            is RegisterIntent.BirthMonthChanged -> {
+                val filtered = intent.value.filter { it.isDigit() }
+                if (filtered.length <= 2) {
+                    updateForm { it.copy(birthMonth = filtered) }
+                }
+            }
+            is RegisterIntent.BirthYearChanged -> {
+                val filtered = intent.value.filter { it.isDigit() }
+                if (filtered.length <= 4) {
+                    updateForm { it.copy(birthYear = filtered) }
+                }
+            }
             is RegisterIntent.Submit -> submit()
             is RegisterIntent.BackClicked -> sendEffect(RegisterEffect.NavigateBack)
-            is RegisterIntent.LoginClicked -> sendEffect(RegisterEffect.NavigateToLogin)
         }
     }
 
-    /** Form alanını günceller; güç göstergesi ve buton aktifliğini yeniden türetir. */
     private fun updateForm(transform: (RegisterUiState) -> RegisterUiState) {
         _uiState.update { current ->
             val updated = transform(current)
-            updated.copy(
-                passwordStrength = updated.password.passwordStrength(),
-                isRegisterEnabled = updated.isFormValid(),
-            )
+            updated.copy(isCompleteEnabled = updated.isFormValid())
         }
     }
 
     private fun submit() {
         val state = _uiState.value
-        if (!state.isRegisterEnabled || state.isLoading) return
+        if (!state.isCompleteEnabled || state.isLoading) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = authRepository.register(
-                firstName = state.firstName,
-                lastName = state.lastName,
-                phoneNumber = state.phoneNumber,
-                password = state.password,
+            
+            val dayFormatted = state.birthDay.padStart(2, '0')
+            val monthFormatted = state.birthMonth.padStart(2, '0')
+            val birthDateString = "${state.birthYear}-${monthFormatted}-${dayFormatted}"
+
+            val result = authRepository.updateInformation(
+                firstName = state.firstName.trim(),
+                lastName = state.lastName.trim(),
+                birthDate = birthDateString
             )
             _uiState.update { it.copy(isLoading = false) }
 
             result
                 .onSuccess { _effect.send(RegisterEffect.NavigateToHome) }
                 .onFailure { error ->
-                    _effect.send(RegisterEffect.ShowError(error.message ?: "Kayıt başarısız."))
+                    _effect.send(RegisterEffect.ShowError(error.message ?: "Profil bilgileri kaydedilemedi."))
                 }
         }
     }
@@ -84,29 +93,13 @@ class RegisterViewModel @Inject constructor(
     }
 }
 
-/** Kayıt butonunun aktif olması için validasyon (ekran kuralı: en az 8 karakter, bir rakam). */
-private fun RegisterUiState.isFormValid(): Boolean =
-    firstName.isNotBlank() &&
+private fun RegisterUiState.isFormValid(): Boolean {
+    val day = birthDay.toIntOrNull() ?: 0
+    val month = birthMonth.toIntOrNull() ?: 0
+    val year = birthYear.toIntOrNull() ?: 0
+    return firstName.isNotBlank() &&
             lastName.isNotBlank() &&
-            phoneNumber.isNotBlank() &&
-            password.isPasswordPolicyValid() &&
-            isTermsAccepted
-
-/** Şifre politikası: en az 8 karakter ve en az bir rakam. */
-private fun String.isPasswordPolicyValid(): Boolean =
-    length >= MIN_PASSWORD_LENGTH && any(Char::isDigit)
-
-/**
- * Şifre gücünü 0..[RegisterUiState.PASSWORD_STRENGTH_MAX] aralığında türetir:
- * uzunluk, rakam ve harf ölçütlerinden her biri bir segment doldurur.
- */
-private fun String.passwordStrength(): Int {
-    if (isEmpty()) return 0
-    var score = 0
-    if (length >= MIN_PASSWORD_LENGTH) score++
-    if (any(Char::isDigit)) score++
-    if (any(Char::isLetter)) score++
-    return score.coerceAtMost(RegisterUiState.PASSWORD_STRENGTH_MAX)
+            birthDay.length == 2 && day in 1..31 &&
+            birthMonth.length == 2 && month in 1..12 &&
+            birthYear.length == 4 && year in 1900..2026
 }
-
-private const val MIN_PASSWORD_LENGTH = 8

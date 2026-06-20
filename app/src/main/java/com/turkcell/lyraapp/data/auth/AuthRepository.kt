@@ -1,13 +1,16 @@
 package com.turkcell.lyraapp.data.auth
 
-interface AuthRepository{
+interface AuthRepository {
 
-    suspend fun login(phoneNumber: String, password: String): Result<Unit>
+    suspend fun requestOtp(phone: String): Result<OtpResponseData>
 
-    suspend fun register(
+    suspend fun verifyOtp(phone: String, code: String): Result<VerifyOtpResponseData>
+
+    suspend fun updateInformation(
         firstName: String,
         lastName: String,
-        phoneNumber: String,
-        password: String
+        birthDate: String
     ): Result<Unit>
+
+    fun getAccessToken(): String?
 }
