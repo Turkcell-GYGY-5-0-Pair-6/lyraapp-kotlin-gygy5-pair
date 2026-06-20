@@ -143,3 +143,12 @@
 - Son Güncelleme Tarihi: 20.06.2026
 
 - Sebep: Listelenecek eleman olmadığında arayüzde boş alan kalmamasını sağlamak ve şarkı oynatılıp geri dönüldüğünde dinleme geçmişini anlık yansıtmak.
+
+
+### "Senin İçin Müzikler" API Entegrasyonu
+
+- Karar: Ana sayfadaki "Senin için çalma listeleri" kısmının "Senin için müzikler" olarak güncellenmesi ve verilerin `/api/v1/me/for-you` endpoint'inden çekilerek oynatılabilir şarkı listesi haline getirilmesi.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: Statik çalma listeleri yerine kullanıcının en çok dinlediği sanatçılara dayalı kişiselleştirilmiş dinamik şarkı karmasını sunmak.

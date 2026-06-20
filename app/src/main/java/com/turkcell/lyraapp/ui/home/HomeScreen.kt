@@ -168,8 +168,22 @@ fun HomeScreen(
                         )
                     }
                 }
-                item { SectionHeader(title = "Senin için çalma listeleri") }
-                item { PlaylistsForYouRow(items = state.playlistsForYou, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
+                item { SectionHeader(title = "Senin için müzikler") }
+                item {
+                    PlaylistsForYouRow(
+                        items = state.playlistsForYou,
+                        onSongClick = { item ->
+                            val song = HomeSong(
+                                id = item.id,
+                                title = item.title,
+                                artist = item.artist,
+                                artworkStartColor = item.artworkStartColor,
+                                artworkEndColor = item.artworkEndColor
+                            )
+                            onIntent(HomeIntent.SongSelected(song))
+                        }
+                    )
+                }
             }
         }
 
@@ -370,11 +384,11 @@ private fun RecentlyPlayedRow(
         }
     }
 }
-/** "Senin için çalma listeleri" yatay scrollable büyük kart listesi. */
+/** "Senin için müzikler" yatay scrollable büyük kart listesi. */
 @Composable
 private fun PlaylistsForYouRow(
     items: List<PlaylistForYou>,
-    onPlaylistClick: (String) -> Unit
+    onSongClick: (PlaylistForYou) -> Unit
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
@@ -384,7 +398,7 @@ private fun PlaylistsForYouRow(
             Column(
                 modifier = Modifier
                     .width(110.dp)
-                    .clickable { onPlaylistClick(item.id) }
+                    .clickable { onSongClick(item) }
             ) {
                 Artwork(
                     startColor = item.artworkStartColor,
@@ -399,6 +413,13 @@ private fun PlaylistsForYouRow(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = item.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

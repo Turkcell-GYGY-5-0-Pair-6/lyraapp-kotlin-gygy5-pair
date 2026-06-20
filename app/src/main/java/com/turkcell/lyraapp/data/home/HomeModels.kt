@@ -41,6 +41,7 @@ data class RecentlyPlayed(
 data class PlaylistForYou(
     val id: String,
     val title: String,
+    val artist: String,
     val artworkStartColor: Long,
     val artworkEndColor: Long,
 )

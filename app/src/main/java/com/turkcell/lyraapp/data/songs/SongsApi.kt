@@ -68,6 +68,15 @@ interface SongsApi {
         @Header("Authorization") authorization: String,
         @Body request: RecordPlayRequest
     ): RecordPlayResponse
+
+    /**
+     * Kullanıcıya özel "Senin İçin Müzikler" karma listesini döner.
+     */
+    @GET("api/v1/me/for-you")
+    suspend fun getForYou(
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int? = null,
+    ): ForYouResponseDto
 }
 
 @Serializable
@@ -77,6 +86,11 @@ data class RecommendationsResponseDto(
 
 @Serializable
 data class RecentlyPlayedResponseDto(
+    val data: List<SongDto> = emptyList(),
+)
+
+@Serializable
+data class ForYouResponseDto(
     val data: List<SongDto> = emptyList(),
 )
 

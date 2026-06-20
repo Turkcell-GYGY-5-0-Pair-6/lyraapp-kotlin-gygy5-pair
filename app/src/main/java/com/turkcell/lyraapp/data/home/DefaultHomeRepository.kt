@@ -38,12 +38,18 @@ class DefaultHomeRepository @Inject constructor(
             emptyList()
         }
 
+        val forYouSongs = if (token != null) {
+            songsApi.getForYou(authorization = "Bearer $token", limit = FOR_YOU_LIMIT).data.map { it.toPlaylistForYou() }
+        } else {
+            songsApi.getSongs(limit = FOR_YOU_LIMIT).data.map { it.toPlaylistForYou() }
+        }
+
         HomeFeed(
             userInitials = USER_INITIALS,
             songs = songs,
             quickPicks = QUICK_PICKS,
             recentlyPlayed = recentlyPlayedSongs,
-            playlistsForYou = PLAYLISTS_FOR_YOU,
+            playlistsForYou = forYouSongs,
         )
     }
 
@@ -64,6 +70,17 @@ class DefaultHomeRepository @Inject constructor(
             id = id,
             title = title,
             subtitle = artist,
+            artworkStartColor = start,
+            artworkEndColor = end,
+        )
+    }
+
+    private fun SongDto.toPlaylistForYou(): PlaylistForYou {
+        val (start, end) = artworkColorsFor(id)
+        return PlaylistForYou(
+            id = id,
+            title = title,
+            artist = artist,
             artworkStartColor = start,
             artworkEndColor = end,
         )
@@ -105,6 +122,7 @@ class DefaultHomeRepository @Inject constructor(
         }
 
         const val RECENTLY_PLAYED_LIMIT = 10
+        const val FOR_YOU_LIMIT = 10
 
         val QUICK_PICKS = listOf(
             QuickPick("qp-1", "Gece Sürüşü", 0xFF8B6FB8, 0xFF4A3D6B),
@@ -113,12 +131,6 @@ class DefaultHomeRepository @Inject constructor(
             QuickPick("qp-4", "Odaklan", 0xFF4AC2A8, 0xFF1F6E5C),
             QuickPick("qp-5", "Derin Mavi", 0xFF6FBF5A, 0xFF356B2A),
             QuickPick("qp-6", "Yaz Anıları", 0xFF5AAFC9, 0xFF2A5F73),
-        )
-
-        val PLAYLISTS_FOR_YOU = listOf(
-            PlaylistForYou("pl-1", "Haftalık Keşif", 0xFF9B7FC4, 0xFF5A4480),
-            PlaylistForYou("pl-2", "Sakin Akşamlar", 0xFF6B5FB8, 0xFF3A3270),
-            PlaylistForYou("pl-3", "Enerji Ver", 0xFF3FAE9C, 0xFF1E5D52),
         )
     }
 }
