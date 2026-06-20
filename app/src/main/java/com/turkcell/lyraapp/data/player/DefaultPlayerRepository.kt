@@ -10,6 +10,8 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.turkcell.lyraapp.data.songs.SongDto
 import com.turkcell.lyraapp.data.songs.SongsApi
+import com.turkcell.lyraapp.data.songs.RecordPlayRequest
+import com.turkcell.lyraapp.data.auth.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,7 @@ import kotlin.math.roundToInt
 class DefaultPlayerRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val songsApi: SongsApi,
+    private val authRepository: AuthRepository,
 ) : PlayerRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -177,6 +180,21 @@ class DefaultPlayerRepository @Inject constructor(
                 player.prepare()
             }
             player.play()
+
+            // Asenkron olarak çalma işlemini backend'e kaydet (recently-played için)
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val token = authRepository.getAccessToken()
+                    if (token != null) {
+                        songsApi.recordPlay(
+                            authorization = "Bearer $token",
+                            request = RecordPlayRequest(songId)
+                        )
+                    }
+                } catch (e: Exception) {
+                    // Hataları sessizce yut
+                }
+            }
 
             updatePlaybackState()
             _playbackStateFlow.value!!

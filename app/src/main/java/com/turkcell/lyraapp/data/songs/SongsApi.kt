@@ -3,6 +3,8 @@ package com.turkcell.lyraapp.data.songs
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.POST
+import retrofit2.http.Body
 
 import retrofit2.http.Header
 import kotlinx.serialization.Serializable
@@ -48,9 +50,47 @@ interface SongsApi {
         @Header("Authorization") authorization: String,
         @Query("limit") limit: Int? = null,
     ): RecommendationsResponseDto
+
+    /**
+     * Kullanıcının son dinlediği şarkıları listeler.
+     */
+    @GET("api/v1/me/recently-played")
+    suspend fun getRecentlyPlayed(
+        @Header("Authorization") authorization: String,
+        @Query("limit") limit: Int? = null,
+    ): RecentlyPlayedResponseDto
+
+    /**
+     * Kullanıcının şarkı dinlediğini sisteme kaydeder.
+     */
+    @POST("api/v1/me/plays")
+    suspend fun recordPlay(
+        @Header("Authorization") authorization: String,
+        @Body request: RecordPlayRequest
+    ): RecordPlayResponse
 }
 
 @Serializable
 data class RecommendationsResponseDto(
     val data: List<SongDto> = emptyList(),
+)
+
+@Serializable
+data class RecentlyPlayedResponseDto(
+    val data: List<SongDto> = emptyList(),
+)
+
+@Serializable
+data class RecordPlayRequest(
+    val songId: String,
+)
+
+@Serializable
+data class RecordPlayResponse(
+    val data: RecordPlayResponseData,
+)
+
+@Serializable
+data class RecordPlayResponseData(
+    val recorded: Boolean,
 )

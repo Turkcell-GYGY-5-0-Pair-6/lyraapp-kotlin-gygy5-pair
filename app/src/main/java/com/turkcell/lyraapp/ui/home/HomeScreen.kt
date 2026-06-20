@@ -46,6 +46,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.turkcell.lyraapp.data.home.HomeSong
 import com.turkcell.lyraapp.data.home.PlaylistForYou
 import com.turkcell.lyraapp.data.home.QuickPick
@@ -64,6 +67,13 @@ fun HomeRoute(
     //ViewModel Flow’unu Compose state’e bağlar ve ekran görünürken çalıştırır, görünmezken durdurur.
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.onIntent(HomeIntent.Retry)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -140,8 +150,24 @@ fun HomeScreen(
                 }
                 /*
                 item { QuickPickGrid(quickPicks = state.quickPicks, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }*/
-                item { SectionHeader(title = "Son çalınanlar", trailingText = "Tümü") }
-                item { RecentlyPlayedRow(items = state.recentlyPlayed, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
+                if (state.recentlyPlayed.isNotEmpty()) {
+                    item { SectionHeader(title = "Son çalınanlar", trailingText = "Tümü") }
+                    item {
+                        RecentlyPlayedRow(
+                            items = state.recentlyPlayed,
+                            onSongClick = { item ->
+                                val song = HomeSong(
+                                    id = item.id,
+                                    title = item.title,
+                                    artist = item.subtitle,
+                                    artworkStartColor = item.artworkStartColor,
+                                    artworkEndColor = item.artworkEndColor
+                                )
+                                onIntent(HomeIntent.SongSelected(song))
+                            }
+                        )
+                    }
+                }
                 item { SectionHeader(title = "Senin için çalma listeleri") }
                 item { PlaylistsForYouRow(items = state.playlistsForYou, onPlaylistClick = { onIntent(HomeIntent.PlaylistClicked(it)) }) }
             }
@@ -305,7 +331,7 @@ private fun SectionHeader(
 @Composable
 private fun RecentlyPlayedRow(
     items: List<RecentlyPlayed>,
-    onPlaylistClick: (String) -> Unit
+    onSongClick: (RecentlyPlayed) -> Unit
 ) {
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
@@ -315,7 +341,7 @@ private fun RecentlyPlayedRow(
             Column(
                 modifier = Modifier
                     .width(110.dp)
-                    .clickable { onPlaylistClick(item.id) }
+                    .clickable { onSongClick(item) }
             ) {
                 Artwork(
                     startColor = item.artworkStartColor,

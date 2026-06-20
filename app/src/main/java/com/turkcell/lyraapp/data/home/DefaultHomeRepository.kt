@@ -31,11 +31,18 @@ class DefaultHomeRepository @Inject constructor(
             songsApi.getSongs(limit = SONGS_PAGE_SIZE).data
         }
         val songs = songDtos.map { it.toHomeSong() }
+
+        val recentlyPlayedSongs = if (token != null) {
+            songsApi.getRecentlyPlayed(authorization = "Bearer $token", limit = RECENTLY_PLAYED_LIMIT).data.map { it.toRecentlyPlayed() }
+        } else {
+            emptyList()
+        }
+
         HomeFeed(
             userInitials = USER_INITIALS,
             songs = songs,
             quickPicks = QUICK_PICKS,
-            recentlyPlayed = RECENTLY_PLAYED,
+            recentlyPlayed = recentlyPlayedSongs,
             playlistsForYou = PLAYLISTS_FOR_YOU,
         )
     }
@@ -46,6 +53,17 @@ class DefaultHomeRepository @Inject constructor(
             id = id,
             title = title,
             artist = artist,
+            artworkStartColor = start,
+            artworkEndColor = end,
+        )
+    }
+
+    private fun SongDto.toRecentlyPlayed(): RecentlyPlayed {
+        val (start, end) = artworkColorsFor(id)
+        return RecentlyPlayed(
+            id = id,
+            title = title,
+            subtitle = artist,
             artworkStartColor = start,
             artworkEndColor = end,
         )
@@ -86,6 +104,8 @@ class DefaultHomeRepository @Inject constructor(
             return (0xFFL shl 24) or (r shl 16) or (g shl 8) or b
         }
 
+        const val RECENTLY_PLAYED_LIMIT = 10
+
         val QUICK_PICKS = listOf(
             QuickPick("qp-1", "Gece Sürüşü", 0xFF8B6FB8, 0xFF4A3D6B),
             QuickPick("qp-2", "Sabah Kahvesi", 0xFF7C83D9, 0xFF3E4486),
@@ -93,12 +113,6 @@ class DefaultHomeRepository @Inject constructor(
             QuickPick("qp-4", "Odaklan", 0xFF4AC2A8, 0xFF1F6E5C),
             QuickPick("qp-5", "Derin Mavi", 0xFF6FBF5A, 0xFF356B2A),
             QuickPick("qp-6", "Yaz Anıları", 0xFF5AAFC9, 0xFF2A5F73),
-        )
-
-        val RECENTLY_PLAYED = listOf(
-            RecentlyPlayed("rp-1", "Neon Sokaklar", "Şehir Işıkları", 0xFFD98E4A, 0xFF8A5526),
-            RecentlyPlayed("rp-2", "Derin Mavi", "Okyanus", 0xFF6FBF5A, 0xFF356B2A),
-            RecentlyPlayed("rp-3", "Yıldız Tozu", "Polaris", 0xFF3D5A80, 0xFF1B2A45),
         )
 
         val PLAYLISTS_FOR_YOU = listOf(

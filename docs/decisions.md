@@ -116,3 +116,30 @@
 - Son Güncelleme Tarihi: 20.06.2026
 
 - Sebep: Kullanıcıya özel önerilen şarkıları listelemek ve tasarımı daha zengin, modern bir grid yapısına dönüştürmek.
+
+
+### Son Çalınanlar API Entegrasyonu
+
+- Karar: Ana sayfadaki son çalınanlar listesinin `/api/v1/me/recently-played` adresinden çekilmesi ve tıklandığında ilgili şarkının oynatılması.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: Son çalınanları statik liste yerine kullanıcının gerçek geçmişinden dinamik olarak çekmek ve oynatılabilmesini sağlamak.
+
+
+### Şarkı Dinleme Geçmişinin Kaydedilmesi Entegrasyonu
+
+- Karar: Şarkı oynatma başlatıldığında (`DefaultPlayerRepository.getPlaybackState`) asenkron olarak arka planda `POST /api/v1/me/plays` endpoint'inin çağrılması.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: Kullanıcının dinleme geçmişini sunucu tarafında kaydetmek ve "Son Çalınanlar" ile "Öneriler" listelerini dinamik olarak besleyebilmek.
+
+
+### Son Çalınanlar Görünürlüğü ve Otomatik Yenileme Entegrasyonu
+
+- Karar: Ana sayfadaki son çalınanlar listesi boş olduğunda alanın gizlenmesi ve ana sayfaya her geri dönüldüğünde (RESUMED) beslemenin otomatik yenilenmesi.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: Listelenecek eleman olmadığında arayüzde boş alan kalmamasını sağlamak ve şarkı oynatılıp geri dönüldüğünde dinleme geçmişini anlık yansıtmak.
