@@ -152,3 +152,12 @@
 - Son Güncelleme Tarihi: 20.06.2026
 
 - Sebep: Statik çalma listeleri yerine kullanıcının en çok dinlediği sanatçılara dayalı kişiselleştirilmiş dinamik şarkı karmasını sunmak.
+
+
+### Gerçek Kullanıcı Profili Entegrasyonu
+
+- Karar: Varsayılan "Zeynep Kaya" / "ZK" mock verisi yerine, `/api/v1/me` adresinden dönen gerçek kullanıcı bilgilerini getiren `DefaultProfileRepository` sınıfının yazılması ve Hilt modülünde bağlanması.
+
+- Son Güncelleme Tarihi: 20.06.2026
+
+- Sebep: Ekranlardaki profil bilgilerini (isim, soyisim, kullanıcı adı ve avatar baş harfleri) gerçek kullanıcı verileriyle dinamik olarak doldurmak.

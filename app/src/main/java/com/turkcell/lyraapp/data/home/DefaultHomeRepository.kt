@@ -1,6 +1,7 @@
 package com.turkcell.lyraapp.data.home
 
 import com.turkcell.lyraapp.data.auth.AuthRepository
+import com.turkcell.lyraapp.data.profile.ProfileRepository
 import com.turkcell.lyraapp.data.songs.SongDto
 import com.turkcell.lyraapp.data.songs.SongsApi
 import javax.inject.Inject
@@ -21,10 +22,12 @@ import kotlin.math.roundToInt
 class DefaultHomeRepository @Inject constructor(
     private val songsApi: SongsApi,
     private val authRepository: AuthRepository,
+    private val profileRepository: ProfileRepository,
 ) : HomeRepository {
 
     override suspend fun getHomeFeed(): Result<HomeFeed> = runCatching {
         val token = authRepository.getAccessToken()
+        val initials = profileRepository.getProfileInfo().map { it.initials }.getOrDefault("ZK")
         val songDtos = if (token != null) {
             songsApi.getRecommendations(authorization = "Bearer $token", limit = SONGS_PAGE_SIZE).data
         } else {
@@ -45,7 +48,7 @@ class DefaultHomeRepository @Inject constructor(
         }
 
         HomeFeed(
-            userInitials = USER_INITIALS,
+            userInitials = initials,
             songs = songs,
             quickPicks = QUICK_PICKS,
             recentlyPlayed = recentlyPlayedSongs,
