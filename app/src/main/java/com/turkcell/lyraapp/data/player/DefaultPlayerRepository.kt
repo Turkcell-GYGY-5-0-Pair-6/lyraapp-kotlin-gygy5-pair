@@ -30,7 +30,8 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * [PlayerRepository]'nin ExoPlayer tabanlı gerçek API implementasyonu.
+ * [PlayerRepository] arayüzünün ExoPlayer tabanlı gerçek veri ve oynatma yönetimi uygulamasıdır.
+ * Bu sınıf uygulama genelinde tekil (Singleton) olarak hizmet verir.
  */
 @Singleton
 class DefaultPlayerRepository @Inject constructor(
@@ -39,44 +40,69 @@ class DefaultPlayerRepository @Inject constructor(
     private val authRepository: AuthRepository,
 ) : PlayerRepository {
 
+    // Arka plan işleri ve asenkron operasyonlar için ana iş parçacığında (Main) çalışan coroutine kapsamı.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
+    // Şarkı çalarken geçen süreyi periyodik olarak sorgulayıp arayüze bildiren görevin referansı.
     private var progressJob: Job? = null
 
+    // ExoPlayer nesnesini ilk ihtiyaç duyulduğunda (lazy) yapılandırıp oluşturur ve olay dinleyicisini ekler.
     override val player: ExoPlayer by lazy {
         ExoPlayer.Builder(context).build().apply {
             addListener(listener)
         }
     }
 
+    // Oynatıcının güncel durumunu sınıf içinde tutmak ve güncellemek için kullanılan MutableStateFlow.
     private val _playbackStateFlow = MutableStateFlow<PlaybackState?>(null)
+    
+    // UI katmanının oynatıcı durumunu güvenli şekilde (salt okunur) dinlemesi için sunulan akış.
     override val playbackStateFlow: Flow<PlaybackState?> = _playbackStateFlow.asStateFlow()
 
+    // Sunucudan çekilen şarkı listesini hafızada tutarak gereksiz ağ isteklerini önleyen önbellek.
     private var cachedSongs: List<SongDto> = emptyList()
+    
+    // O an çalınmakta olan veya yüklenen şarkının benzersiz kimliği.
     private var currentSongId: String? = null
+    
+    // Şarkının beğenilme (favori) durumunu tutan değişken.
     private var isLikedState = false
+    
+    // Şarkıların karışık sırada çalınıp çalınmayacağını tutan değişken.
     private var isShuffleState = false
+    
+    // Şarkının bittiğinde tekrar edip etmeyeceğini tutan değişken.
     private var isRepeatState = false
 
+    // ExoPlayer oynatma olaylarını ve durum değişikliklerini dinleyen olay yöneticisi.
     private val listener = object : Player.Listener {
+        
+        // Çalma durumu (oynatma/duraklatma) değiştiğinde tetiklenir.
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             updatePlaybackState()
             if (isPlaying) {
+                // Şarkı oynatılıyorsa ilerleme çubuğunu güncelleyen görevi ve arka plan servisini başlat.
                 startProgressPolling()
                 startPlaybackService()
             } else {
+                // Şarkı duraklatıldıysa periyodik sorgulamayı durdur.
                 stopProgressPolling()
             }
         }
 
+        // Oynatıcının iç durumu (tamamlandı, hazırlanıyor, boşta vb.) değiştiğinde tetiklenir.
         override fun onPlaybackStateChanged(state: Int) {
             updatePlaybackState()
+            // Şarkının çalınması tamamlandığında
             if (state == Player.STATE_ENDED) {
+                // Eğer tek şarkı tekrar modu aktif değilse otomatik olarak bir sonraki şarkıya geç.
                 if (player.repeatMode != Player.REPEAT_MODE_ONE) {
                     scope.launch { skipToNext() }
                 }
             }
         }
 
+        // Oynatma pozisyonunda beklenmedik bir kesinti veya manuel atlama olduğunda tetiklenir.
         override fun onPositionDiscontinuity(
             oldPosition: Player.PositionInfo,
             newPosition: Player.PositionInfo,
@@ -86,6 +112,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Şarkı listesini getiren yardımcı metot. Önbellek boşsa sunucuya istek atar.
     private suspend fun getSongList(): List<SongDto> {
         if (cachedSongs.isNotEmpty()) return cachedSongs
         return try {
@@ -97,6 +124,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Her 500 milisaniyede bir çalışarak şarkının anlık ilerleme süresini arayüze bildiren periyodik görevi başlatır.
     private fun startProgressPolling() {
         progressJob?.cancel()
         progressJob = scope.launch {
@@ -107,11 +135,13 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Zaman ilerlemesini takip eden periyodik coroutine görevini sonlandırır.
     private fun stopProgressPolling() {
         progressJob?.cancel()
         progressJob = null
     }
 
+    // ExoPlayer üzerindeki güncel durum bilgilerini alıp PlaybackState modeli ile akış üzerinden yayınlar.
     private fun updatePlaybackState() {
         val songId = currentSongId ?: return
         val song = cachedSongs.find { it.id == songId } ?: return
@@ -140,10 +170,12 @@ class DefaultPlayerRepository @Inject constructor(
         _playbackStateFlow.value = newState
     }
 
+    // Şarkının sunucudan akış (stream) URL'sini çeker.
     override suspend fun getStreamUrl(songId: String): Result<String> = runCatching {
         songsApi.getStreamUrl(songId).data.url
     }
 
+    // Aktif şarkı kimliğini ayarlar ve asenkron olarak oynatma durumunu günceller.
     override fun setCurrentSongId(songId: String) {
         currentSongId = songId
         scope.launch {
@@ -152,25 +184,31 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Belirtilen şarkıyı hazırlar, ExoPlayer'a yükler, oynatmayı başlatır ve backend tarafına dinlenme kaydı gönderir.
     override suspend fun getPlaybackState(songId: String): Result<PlaybackState> = withContext(Dispatchers.Main) {
         runCatching {
+            // Şarkı önbellekte aranır, yoksa listeyi yeniden çeker.
             var song = cachedSongs.find { it.id == songId }
             if (song == null) {
                 getSongList()
                 song = cachedSongs.find { it.id == songId } ?: throw NoSuchElementException("Song not found")
             }
 
+            // Şarkının imzalı akış bağlantısını sunucudan talep eder.
             val streamUrl = songsApi.getStreamUrl(songId).data.url
 
+            // Eğer oynatılmak istenen şarkı şu an yüklü olandan farklıysa ExoPlayer'a yükler.
             if (currentSongId != songId) {
                 currentSongId = songId
                 
+                // Medya meta verilerini hazırlar.
                 val mediaMetadata = MediaMetadata.Builder()
                     .setTitle(song.title)
                     .setArtist(song.artist)
                     .setAlbumTitle(song.album ?: "Lyra Album")
                     .build()
 
+                // Oynatılacak medya öğesini URL ve meta verileri ile oluşturur.
                 val mediaItem = MediaItem.Builder()
                     .setUri(Uri.parse(streamUrl))
                     .setMediaMetadata(mediaMetadata)
@@ -181,7 +219,7 @@ class DefaultPlayerRepository @Inject constructor(
             }
             player.play()
 
-            // Asenkron olarak çalma işlemini backend'e kaydet (recently-played için)
+            // Dinleme istatistiğini kaydetmek üzere asenkron olarak sunucuya istek gönderir.
             scope.launch(Dispatchers.IO) {
                 try {
                     val token = authRepository.getAccessToken()
@@ -201,15 +239,17 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Arka planda oynatmanın kesintisiz devam edebilmesi için PlaybackService servisini başlatır.
     private fun startPlaybackService() {
         try {
             val intent = Intent(context, PlaybackService::class.java)
             context.startService(intent)
         } catch (e: Exception) {
-            // Gracefully ignore service startup failures in background
+            // Arka planda servis başlatma hatalarını güvenle yut.
         }
     }
 
+    // Oynatmayı duraklatır veya duraklatılmışsa devam ettirir.
     override suspend fun togglePlayPause(): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             if (player.isPlaying) {
@@ -221,6 +261,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Şarkının beğenilme (beğendim/beğenmedim) durumunu değiştirir.
     override suspend fun toggleLike(): Result<Unit> = runCatching {
         isLikedState = !isLikedState
         withContext(Dispatchers.Main) {
@@ -228,6 +269,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Karışık çalma modunu açar veya kapatır.
     override suspend fun toggleShuffle(): Result<Unit> = runCatching {
         isShuffleState = !isShuffleState
         withContext(Dispatchers.Main) {
@@ -235,14 +277,17 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Tekrar oynatma modunu değiştirir (tek şarkı tekrarı aktif/pasif).
     override suspend fun toggleRepeat(): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             isRepeatState = !isRepeatState
+            // ExoPlayer'a ilgili tekrar modunu set eder.
             player.repeatMode = if (isRepeatState) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
             updatePlaybackState()
         }
     }
 
+    // Şarkıyı belirtilen milisaniyeye (ilerleme pozisyonuna) sarar.
     override suspend fun seekTo(progressMs: Long): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             player.seekTo(progressMs)
@@ -250,6 +295,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Listede sıradaki bir sonraki şarkıyı bulur ve oynatır.
     override suspend fun skipToNext(): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             val songList = getSongList()
@@ -263,6 +309,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    // Listede bir önceki şarkıyı bulur ve oynatır.
     override suspend fun skipToPrevious(): Result<Unit> = withContext(Dispatchers.Main) {
         runCatching {
             val songList = getSongList()
@@ -276,7 +323,9 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
-    private companion object {
+    companion object {
+        
+        // Milisaniye cinsinden süreyi "dakika:saniye" (Örn: 3:45) biçiminde formatlar.
         fun formatTime(ms: Long): String {
             if (ms <= 0) return "0:00"
             val totalSeconds = ms / 1000
@@ -285,6 +334,7 @@ class DefaultPlayerRepository @Inject constructor(
             return String.format("%d:%02d", minutes, seconds)
         }
 
+        // Şarkının benzersiz kimliğini kullanarak HSL formatında uyumlu gradyan renk kodları üretir.
         fun artworkColorsFor(id: String): Pair<Long, Long> {
             val hue = (abs(id.hashCode()) % 360).toFloat()
             val start = hslToArgb(hue, saturation = 0.50f, lightness = 0.55f)
@@ -292,6 +342,7 @@ class DefaultPlayerRepository @Inject constructor(
             return start to end
         }
 
+        // HSL (Renk Özü, Doygunluk, Parlaklık) değerlerini ARGB formatında 32 bitlik renk koduna çevirir.
         fun hslToArgb(hue: Float, saturation: Float, lightness: Float): Long {
             val c = (1f - abs(2f * lightness - 1f)) * saturation
             val hPrime = hue / 60f

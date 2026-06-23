@@ -32,8 +32,6 @@ import com.turkcell.lyraapp.ui.search.SearchRoute
 import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
 import com.turkcell.lyraapp.ui.player.NowPlayingRoute
 import com.turkcell.lyraapp.ui.player.MiniPlayerRoute
-import com.turkcell.lyraapp.ui.player.PlayerRoute
-import com.turkcell.lyraapp.ui.player.PlayerViewModel
 
 @Composable
 fun LyraNavHost(
@@ -163,22 +161,6 @@ fun LyraNavHost(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = PLAYER_ROUTE_PATTERN,
-                    arguments = listOf(
-                        navArgument(PlayerViewModel.ARG_SONG_ID) { type = NavType.StringType },
-                        navArgument(PlayerViewModel.ARG_TITLE) {
-                            type = NavType.StringType
-                            defaultValue = ""
-                        },
-                        navArgument(PlayerViewModel.ARG_ARTIST) {
-                            type = NavType.StringType
-                            defaultValue = ""
-                        },
-                    ),
-                ) {
-                    PlayerRoute(onNavigateBack = { navController.popBackStack() })
-                }
             }
 
             if (shouldShowMiniPlayer(currentRoute)) {
@@ -242,26 +224,7 @@ private fun shouldShowMiniPlayer(route: String?): Boolean {
     if (route == null) return false
     val isAuth = route == LyraDestination.Login.route || route == LyraDestination.Register.route
     val isNowPlaying = route.startsWith("now_playing")
-    val isPlayer = route.startsWith("player")
     val isProfile = route == LyraDestination.Profile.route
     val isPlaylistDetail = route == LyraDestination.PlaylistDetail.route || route.startsWith("playlist_detail")
-    return !isAuth && !isNowPlaying && !isPlayer && !isProfile && !isPlaylistDetail
-}
-
-/**
- * Oynatıcı route deseni: şarkı kimliği yol parametresi, başlık/sanatçı opsiyonel query
- * parametresidir. ViewModel argümanları [PlayerViewModel.ARG_*] ile bu desenden çözer.
- */
-private const val PLAYER_ROUTE_PATTERN =
-    "player/{${PlayerViewModel.ARG_SONG_ID}}?" +
-        "${PlayerViewModel.ARG_TITLE}={${PlayerViewModel.ARG_TITLE}}&" +
-        "${PlayerViewModel.ARG_ARTIST}={${PlayerViewModel.ARG_ARTIST}}"
-
-/**
- * Bir şarkı için gerçek oynatıcı yolunu üretir. Tüm bileşenler URL-encode edilir; böylece
- * boşluk/özel karakter içeren başlık ve sanatçı adları route'u bozmaz.
- */
-private fun playerRoute(songId: String, title: String, artist: String): String =
-    "player/${Uri.encode(songId)}?" +
-        "${PlayerViewModel.ARG_TITLE}=${Uri.encode(title)}&" +
-        "${PlayerViewModel.ARG_ARTIST}=${Uri.encode(artist)}"
+    return !isAuth && !isNowPlaying && !isProfile && !isPlaylistDetail
+}

@@ -33,7 +33,10 @@ data class VerifyOtpResponse(
 data class VerifyOtpResponseData(
     val accessToken: String,
     val refreshToken: String,
-    val expiresIn: Int
+    val expiresIn: Int,
+    val user: UserDto? = null,
+    val firstTime: Boolean = false,
+    val tokenType: String? = null
 )
 
 @Serializable
