@@ -323,6 +323,29 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    override suspend fun stop(): Result<Unit> = withContext(Dispatchers.Main) {
+        runCatching {
+            if (player.isPlaying) {
+                player.pause()
+            }
+            player.stop()
+            player.clearMediaItems()
+            currentSongId = null
+            _playbackStateFlow.value = null
+            stopProgressPolling()
+            stopPlaybackService()
+        }
+    }
+
+    private fun stopPlaybackService() {
+        try {
+            val intent = Intent(context, PlaybackService::class.java)
+            context.stopService(intent)
+        } catch (e: Exception) {
+            // Arka planda servis durdurma hatalarını güvenle yut.
+        }
+    }
+
     companion object {
         
         // Milisaniye cinsinden süreyi "dakika:saniye" (Örn: 3:45) biçiminde formatlar.

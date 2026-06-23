@@ -61,6 +61,11 @@ class FakeAuthRepository @Inject constructor() : AuthRepository {
 
     override fun getAccessToken(): String? = accessToken
 
+    override fun logout() {
+        accessToken = null
+        currentPhone = null
+    }
+
     private companion object {
         const val NETWORK_DELAY_MS = 1_000L
     }

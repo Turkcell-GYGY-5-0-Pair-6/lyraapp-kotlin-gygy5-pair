@@ -34,4 +34,8 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getAccessToken(): String? = accessToken
+    
+    override fun logout() {
+        accessToken = null
+    }
 }

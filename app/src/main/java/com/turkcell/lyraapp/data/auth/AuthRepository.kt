@@ -13,4 +13,6 @@ interface AuthRepository {
     ): Result<Unit>
 
     fun getAccessToken(): String?
+
+    fun logout()
 }

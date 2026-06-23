@@ -39,4 +39,5 @@ interface PlayerRepository {
     suspend fun seekTo(progressMs: Long): Result<Unit>
     suspend fun skipToNext(): Result<Unit>
     suspend fun skipToPrevious(): Result<Unit>
+    suspend fun stop(): Result<Unit>
 }
