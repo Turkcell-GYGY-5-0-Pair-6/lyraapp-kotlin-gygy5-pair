@@ -22,6 +22,7 @@ data class PlaybackState(
     val isLiked: Boolean = false,
     val isShuffleEnabled: Boolean = false,
     val isRepeatEnabled: Boolean = false,
+    val isDownloaded: Boolean = false,
     val artworkStartColor: Long,
     val artworkEndColor: Long
 )
@@ -40,4 +41,5 @@ interface PlayerRepository {
     suspend fun skipToNext(): Result<Unit>
     suspend fun skipToPrevious(): Result<Unit>
     suspend fun stop(): Result<Unit>
+    suspend fun toggleDownload(songId: String): Result<Unit>
 }
