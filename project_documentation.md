@@ -2,13 +2,9 @@
 
 Bu döküman, Turkcell GYGY5 Android Eğitimi kapsamında geliştirilen LyraApp (Online/Offline Müzik Çalar Uygulaması) projesinin teknik mimarisini, teknoloji yığınını, veri akışını ve dosya yapısını detaylandırmaktadır.
 
----
-
 ## 1. Proje Genel Özeti
 
 LyraApp, hem çevrimiçi hem de çevrimdışı müzik çalma özelliklerine sahip, modern Android geliştirme pratikleriyle inşa edilmiş bir mobil uygulamadır. Uygulama, uzaktaki bir RESTful API ile haberleşerek kullanıcı doğrulama, dinamik içerik önerileri, çalma geçmişi kaydı ve profil yönetimi gibi özellikleri gerçekleştirir. Müzik oynatma yetenekleri için arka planda çalışan servisler ve medya kontrolcüleri entegre edilmiştir.
-
----
 
 ## 2. Teknoloji Yığını ve Bağımlılıklar
 
@@ -26,7 +22,6 @@ Projenin temel kütüphane ve araç seti [libs.versions.toml](file:///c:/Users/A
 *   **Yerel Depolama:** Preferences DataStore 1.1.0 (Tema tercihleri ve oturum yönetimi için).
 *   **Navigasyon:** Jetpack Compose Navigation 2.8.5.
 
----
 
 ## 3. Mimari Yapı ve Temel Kararlar
 
@@ -57,8 +52,6 @@ MVI mimarisi hakkında detaylı bilgi için [mvi-overview.md](file:///c:/Users/A
 ### 3.4. Tema Yönetimi
 *   [02-theme-system.md](file:///c:/Users/Ahmet/Desktop/lyraapp-kotlin-gygy5-pair-main/docs/design/02-theme-system.md) dosyasında belgelendiği üzere, kullanıcı tercihleri `PreferencesDataStore` içinde saklanır.
 *   Kullanıcının Dark veya Light tema tercihi uygulama yeniden başlatılsa dahi korunur ve `MainActivity` düzeyinde toplanarak Compose ağacına yayılır.
-
----
 
 ## 4. Proje Klasör ve Dosya Yapısı Dökümü
 
@@ -97,8 +90,6 @@ Hilt modülleri bağımlılıkları bağlamak için [di/](file:///c:/Users/Ahmet
 *   [di/PlayerModule.kt](file:///c:/Users/Ahmet/Desktop/lyraapp-kotlin-gygy5-pair-main/app/src/main/java/com/turkcell/lyraapp/di/PlayerModule.kt)
 *   [di/ProfileModule.kt](file:///c:/Users/Ahmet/Desktop/lyraapp-kotlin-gygy5-pair-main/app/src/main/java/com/turkcell/lyraapp/di/ProfileModule.kt)
 *   (Diğer ekranlara ait enjeksiyon modülleri de bu klasörde mevcuttur).
-
----
 
 ## 5. Sık Yapılan Hatalar ve Öneriler
 
