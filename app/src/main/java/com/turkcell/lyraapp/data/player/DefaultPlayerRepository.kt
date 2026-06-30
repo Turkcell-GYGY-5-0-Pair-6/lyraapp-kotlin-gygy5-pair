@@ -28,6 +28,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import java.io.File
+import okhttp3.OkHttpClient
 
 /**
  * [PlayerRepository] arayüzünün ExoPlayer tabanlı gerçek veri ve oynatma yönetimi uygulamasıdır.
@@ -38,6 +40,7 @@ class DefaultPlayerRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val songsApi: SongsApi,
     private val authRepository: AuthRepository,
+    private val okHttpClient: OkHttpClient,
 ) : PlayerRepository {
 
     // Arka plan işleri ve asenkron operasyonlar için ana iş parçacığında (Main) çalışan coroutine kapsamı.
@@ -115,12 +118,28 @@ class DefaultPlayerRepository @Inject constructor(
     // Şarkı listesini getiren yardımcı metot. Önbellek boşsa sunucuya istek atar.
     private suspend fun getSongList(): List<SongDto> {
         if (cachedSongs.isNotEmpty()) return cachedSongs
+        val cacheFile = File(context.filesDir, "songs_cache.json")
         return try {
             val response = songsApi.getSongs(limit = 100)
             cachedSongs = response.data
+            scope.launch(Dispatchers.IO) {
+                runCatching {
+                    val jsonString = json.encodeToString(response.data)
+                    cacheFile.writeText(jsonString)
+                }
+            }
             response.data
         } catch (e: Exception) {
-            emptyList()
+            runCatching {
+                if (cacheFile.exists()) {
+                    val jsonString = cacheFile.readText()
+                    val decoded = json.decodeFromString<List<SongDto>>(jsonString)
+                    cachedSongs = decoded
+                    decoded
+                } else {
+                    emptyList()
+                }
+            }.getOrDefault(emptyList())
         }
     }
 
@@ -141,7 +160,6 @@ class DefaultPlayerRepository @Inject constructor(
         progressJob = null
     }
 
-    // ExoPlayer üzerindeki güncel durum bilgilerini alıp PlaybackState modeli ile akış üzerinden yayınlar.
     private fun updatePlaybackState() {
         val songId = currentSongId ?: return
         val song = cachedSongs.find { it.id == songId } ?: return
@@ -150,6 +168,10 @@ class DefaultPlayerRepository @Inject constructor(
         val durationMs = player.duration.coerceAtLeast(0L)
         val progressMs = player.currentPosition.coerceAtLeast(0L)
         val (startColor, endColor) = artworkColorsFor(songId)
+
+        val downloadDir = File(context.filesDir, "downloads")
+        val songFile = File(downloadDir, "$songId.mp3")
+        val isDownloaded = songFile.exists() && songFile.length() > 0
 
         val newState = PlaybackState(
             songId = songId,
@@ -164,6 +186,7 @@ class DefaultPlayerRepository @Inject constructor(
             isLiked = isLikedState,
             isShuffleEnabled = isShuffleState,
             isRepeatEnabled = isRepeatState,
+            isDownloaded = isDownloaded,
             artworkStartColor = startColor,
             artworkEndColor = endColor
         )
@@ -194,8 +217,15 @@ class DefaultPlayerRepository @Inject constructor(
                 song = cachedSongs.find { it.id == songId } ?: throw NoSuchElementException("Song not found")
             }
 
-            // Şarkının imzalı akış bağlantısını sunucudan talep eder.
-            val streamUrl = songsApi.getStreamUrl(songId).data.url
+            val downloadDir = File(context.filesDir, "downloads")
+            val songFile = File(downloadDir, "$songId.mp3")
+            val hasLocalFile = songFile.exists() && songFile.length() > 0
+
+            val mediaUri = if (hasLocalFile) {
+                Uri.fromFile(songFile)
+            } else {
+                Uri.parse(songsApi.getStreamUrl(songId).data.url)
+            }
 
             // Eğer oynatılmak istenen şarkı şu an yüklü olandan farklıysa ExoPlayer'a yükler.
             if (currentSongId != songId) {
@@ -208,9 +238,9 @@ class DefaultPlayerRepository @Inject constructor(
                     .setAlbumTitle(song.album ?: "Lyra Album")
                     .build()
 
-                // Oynatılacak medya öğesini URL ve meta verileri ile oluşturur.
+                // Oynatılacak medya öğesini URL/URI ve meta verileri ile oluşturur.
                 val mediaItem = MediaItem.Builder()
-                    .setUri(Uri.parse(streamUrl))
+                    .setUri(mediaUri)
                     .setMediaMetadata(mediaMetadata)
                     .build()
 
@@ -343,6 +373,36 @@ class DefaultPlayerRepository @Inject constructor(
             context.stopService(intent)
         } catch (e: Exception) {
             // Arka planda servis durdurma hatalarını güvenle yut.
+        }
+    }
+
+    override suspend fun toggleDownload(songId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val downloadDir = File(context.filesDir, "downloads")
+            if (!downloadDir.exists()) {
+                downloadDir.mkdirs()
+            }
+            val songFile = File(downloadDir, "$songId.mp3")
+            if (songFile.exists()) {
+                songFile.delete()
+            } else {
+                val streamUrl = getStreamUrl(songId).getOrThrow()
+                val request = okhttp3.Request.Builder()
+                    .url(streamUrl)
+                    .build()
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw Exception("İndirme başarısız: ${response.message}")
+                    val body = response.body ?: throw Exception("Response body null")
+                    body.byteStream().use { inputStream ->
+                        songFile.outputStream().use { outputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                }
+            }
+            withContext(Dispatchers.Main) {
+                updatePlaybackState()
+            }
         }
     }
 

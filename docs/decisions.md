@@ -161,3 +161,12 @@
 - Son Güncelleme Tarihi: 20.06.2026
 
 - Sebep: Ekranlardaki profil bilgilerini (isim, soyisim, kullanıcı adı ve avatar baş harfleri) gerçek kullanıcı verileriyle dinamik olarak doldurmak.
+
+
+### Müzik Oynatıcı Ekranına Çevrimdışı İndirme Özelliği
+
+- Karar: Müzik oynatıcı ekranında aktif şarkının indirilmesi durumunda şarkının `context.filesDir/downloads/{songId}.mp3` konumuna indirilmesi, çalma talebinde dosya varlığı kontrol edilerek eğer dosya mevcutsa yerel `Uri.fromFile(songFile)` üzerinden ExoPlayer'da oynatılması.
+
+- Son Güncelleme Tarihi: 29.06.2026
+
+- Sebep: Kullanıcının indirdiği şarkıları çevrimdışı durumdayken internete ihtiyaç duymadan cihazından oynatabilmesini sağlamak.
