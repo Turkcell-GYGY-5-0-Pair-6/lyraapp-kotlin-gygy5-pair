@@ -187,3 +187,12 @@
 - Son Güncelleme Tarihi: 01.07.2026
 
 - Sebep: Premium üyeliği teşvik etmek ve kullanıcılara sunulan avantajları/seçenekleri görsel bir paywall arayüzü üzerinden tanıtmak.
+
+
+### Premium Üyelik Satın Alma (Checkout) API Entegrasyonu
+
+- Karar: `/api/v1/memberships/checkout` ödeme/checkout API çağrısının mevcut `ProfileRepository` sınıfı üzerine genişletilerek `checkout` metodu olarak eklenmesi.
+
+- Son Güncelleme Tarihi: 01.07.2026
+
+- Sebep: Profil bilgileri ve üyelik (membership) durumu birbiriyle doğrudan ilişkili olduğundan, ek bir repository ve DI katmanı oluşturmak yerine veri bütünlüğünü tek bir depo (`ProfileRepository`) üzerinden yöneterek mimari sadeleştirme sağlamak.

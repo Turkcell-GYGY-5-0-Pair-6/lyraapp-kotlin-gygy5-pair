@@ -16,8 +16,26 @@ class FakeProfileRepository @Inject constructor() : ProfileRepository {
                 followersCount = "1.2B",
                 followingCount = "348",
                 initials = "ZK",
-                premiumDaysLeft = 3
+                premiumDaysLeft = 3,
+                membershipType = "recurring"
             )
         )
+    }
+
+    override suspend fun checkout(
+        plan: String,
+        cardNumber: String,
+        expMonth: Int,
+        expYear: Int,
+        cvc: String,
+        holderName: String
+    ): Result<Unit> {
+        delay(1500L)
+        val cleanCard = cardNumber.replace(" ", "")
+        return if (cleanCard == "4242424242424242") {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("Ödeme reddedildi. Lütfen geçerli bir test kartı kullanın."))
+        }
     }
 }

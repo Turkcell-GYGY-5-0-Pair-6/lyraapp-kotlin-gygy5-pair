@@ -207,6 +207,7 @@ fun ProfileScreen(
                     // Premium Bilgilendirme Kartı
                     PremiumBanner(
                         tier = user.tier,
+                        membershipType = user.membershipType,
                         premiumDaysLeft = user.premiumDaysLeft,
                         onClick = onNavigateToPremium,
                         modifier = Modifier.padding(horizontal = 20.dp)
@@ -447,11 +448,14 @@ private fun ProfileOptionItem(
 @Composable
 private fun PremiumBanner(
     tier: String,
+    membershipType: String?,
     premiumDaysLeft: Int?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isPremium = tier == "Premium"
+    val isRecurring = isPremium && membershipType == "recurring"
+    val isOnetime = isPremium && membershipType == "one-time"
     val gradientColors = if (isPremium) {
         listOf(Color(0xFF8C5D6C), Color(0xFF5D4037))
     } else {
@@ -486,8 +490,12 @@ private fun PremiumBanner(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (isPremium) {
+                text = if (isOnetime) {
                     if (premiumDaysLeft != null) "Premium · $premiumDaysLeft gün kaldı" else "Premium"
+                } else if (isRecurring) {
+                    "Premium Ayarları"
+                } else if (isPremium) {
+                    "Premium"
                 } else {
                     "Premium'a Geç"
                 },
@@ -498,7 +506,7 @@ private fun PremiumBanner(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = if (isPremium) {
-                    "Yenile ya da aboneliğe geç"
+                    if (isOnetime) "Yenile ya da aboneliğe geç" else "Abonelik aktif"
                 } else {
                     "Reklamsız ve çevrimdışı müzik keyfi için başla"
                 },

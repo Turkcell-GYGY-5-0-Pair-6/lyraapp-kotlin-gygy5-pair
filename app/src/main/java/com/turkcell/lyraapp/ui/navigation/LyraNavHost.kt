@@ -29,6 +29,7 @@ import com.turkcell.lyraapp.ui.library.LibraryRoute
 import com.turkcell.lyraapp.ui.library.create.CreatePlaylistRoute
 import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.premium.PremiumRoute
+import com.turkcell.lyraapp.ui.checkout.CheckoutRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
 import com.turkcell.lyraapp.ui.player.NowPlayingRoute
@@ -144,7 +145,26 @@ fun LyraNavHost(
                 }
                 composable(LyraDestination.Premium.route) {
                     PremiumRoute(
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToCheckout = { planId ->
+                            navController.navigate("checkout/$planId")
+                        }
+                    )
+                }
+                composable(
+                    route = LyraDestination.Checkout.route,
+                    arguments = listOf(
+                        navArgument("planId") { type = NavType.StringType }
+                    )
+                ) {
+                    CheckoutRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToProfile = {
+                            navController.navigate(LyraDestination.Profile.route) {
+                                popUpTo(LyraDestination.Home.route) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        }
                     )
                 }
                 composable(
@@ -235,5 +255,6 @@ private fun shouldShowMiniPlayer(route: String?): Boolean {
     val isNowPlaying = route.startsWith("now_playing")
     val isProfile = route == LyraDestination.Profile.route
     val isPlaylistDetail = route == LyraDestination.PlaylistDetail.route || route.startsWith("playlist_detail")
-    return !isAuth && !isNowPlaying && !isProfile && !isPlaylistDetail
+    val isCheckout = route.startsWith("checkout")
+    return !isAuth && !isNowPlaying && !isProfile && !isPlaylistDetail && !isCheckout
 }

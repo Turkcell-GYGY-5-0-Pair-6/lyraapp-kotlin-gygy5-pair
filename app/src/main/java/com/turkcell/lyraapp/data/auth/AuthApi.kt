@@ -24,9 +24,48 @@ interface AuthApi {
     suspend fun getProfile(
         @Header("Authorization") authorization: String
     ): ProfileResponse
+
+    @POST("api/v1/memberships/checkout")
+    suspend fun checkout(
+        @Header("Authorization") authorization: String,
+        @Body request: CheckoutRequest
+    ): CheckoutResponse
 }
 
 @Serializable
 data class ProfileResponse(
     val data: UserDto
+)
+
+@Serializable
+data class CheckoutRequest(
+    val plan: String,
+    val card: CardDto
+)
+
+@Serializable
+data class CardDto(
+    val number: String,
+    val expMonth: Int,
+    val expYear: Int,
+    val cvc: String,
+    val holderName: String
+)
+
+@Serializable
+data class CheckoutResponse(
+    val data: CheckoutResponseData
+)
+
+@Serializable
+data class CheckoutResponseData(
+    val payment: PaymentDto,
+    val membership: MembershipDto
+)
+
+@Serializable
+data class PaymentDto(
+    val transactionId: String,
+    val amountKurus: Int,
+    val currency: String
 )

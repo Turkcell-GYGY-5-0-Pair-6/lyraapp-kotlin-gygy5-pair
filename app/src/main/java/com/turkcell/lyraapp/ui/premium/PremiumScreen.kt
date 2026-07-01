@@ -50,6 +50,7 @@ import com.turkcell.lyraapp.ui.theme.LyraAppTheme
 @Composable
 fun PremiumRoute(
     onNavigateBack: () -> Unit,
+    onNavigateToCheckout: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PremiumViewModel = hiltViewModel(),
 ) {
@@ -66,6 +67,7 @@ fun PremiumRoute(
     PremiumScreen(
         state = uiState,
         onIntent = viewModel::onIntent,
+        onNavigateToCheckout = onNavigateToCheckout,
         modifier = modifier,
     )
 }
@@ -77,6 +79,7 @@ fun PremiumRoute(
 fun PremiumScreen(
     state: PremiumUiState,
     onIntent: (PremiumIntent) -> Unit,
+    onNavigateToCheckout: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -192,8 +195,11 @@ fun PremiumScreen(
                     subtext = "İstediğin zaman iptal et",
                     price = "₺59,99 / ay",
                     badgeText = null,
-                    isSelected = state.selectedPlanId == "monthly",
-                    onClick = { onIntent(PremiumIntent.SelectPlan("monthly")) }
+                    isSelected = state.selectedPlanId == "recurring",
+                    onClick = {
+                        onIntent(PremiumIntent.SelectPlan("recurring"))
+                        onNavigateToCheckout("recurring")
+                    }
                 )
 
                 // Plan 2: Tek seferlik
@@ -203,7 +209,10 @@ fun PremiumScreen(
                     price = "₺79,99",
                     badgeText = null,
                     isSelected = state.selectedPlanId == "one-time",
-                    onClick = { onIntent(PremiumIntent.SelectPlan("one-time")) }
+                    onClick = {
+                        onIntent(PremiumIntent.SelectPlan("one-time"))
+                        onNavigateToCheckout("one-time")
+                    }
                 )
 
                 Spacer(
@@ -353,7 +362,8 @@ private fun PremiumScreenPreview() {
     LyraAppTheme(darkTheme = true) {
         PremiumScreen(
             state = PremiumUiState(),
-            onIntent = {}
+            onIntent = {},
+            onNavigateToCheckout = {}
         )
     }
 }

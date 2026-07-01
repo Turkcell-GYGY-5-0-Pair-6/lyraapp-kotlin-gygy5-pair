@@ -2,6 +2,8 @@ package com.turkcell.lyraapp.data.profile
 
 import com.turkcell.lyraapp.data.auth.AuthApi
 import com.turkcell.lyraapp.data.auth.AuthRepository
+import com.turkcell.lyraapp.data.auth.CheckoutRequest
+import com.turkcell.lyraapp.data.auth.CardDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,7 +39,31 @@ class DefaultProfileRepository @Inject constructor(
             followersCount = "0",
             followingCount = "0",
             initials = if (initials.isEmpty()) "U" else initials,
-            premiumDaysLeft = premiumDaysLeft
+            premiumDaysLeft = premiumDaysLeft,
+            membershipType = user.membership?.type
         )
+    }
+
+    override suspend fun checkout(
+        plan: String,
+        cardNumber: String,
+        expMonth: Int,
+        expYear: Int,
+        cvc: String,
+        holderName: String
+    ): Result<Unit> = runCatching {
+        val token = authRepository.getAccessToken() ?: throw IllegalStateException("Oturum açılmadı. Lütfen giriş yapın.")
+        val formattedCardNumber = cardNumber.filter { it.isDigit() }.chunked(4).joinToString(" ")
+        val request = CheckoutRequest(
+            plan = plan,
+            card = CardDto(
+                number = formattedCardNumber,
+                expMonth = expMonth,
+                expYear = expYear,
+                cvc = cvc,
+                holderName = holderName
+            )
+        )
+        authApi.checkout(authorization = "Bearer $token", request = request)
     }
 }

@@ -5,7 +5,7 @@ package com.turkcell.lyraapp.ui.premium
  * Effect (tek seferlik olay) tek dosyada tanımlanmıştır.
  */
 data class PremiumUiState(
-    val selectedPlanId: String = "monthly", // "monthly" veya "one-time"
+    val selectedPlanId: String = "recurring", // "recurring" veya "one-time"
     val isLoading: Boolean = false
 )
 
