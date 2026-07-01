@@ -27,6 +27,6 @@ sealed interface CheckoutIntent {
 
 sealed interface CheckoutEffect {
     data object NavigateBack : CheckoutEffect
-    data object NavigateToProfile : CheckoutEffect
+    data object NavigateToSuccess : CheckoutEffect
     data class ShowError(val message: String) : CheckoutEffect
 }

@@ -66,7 +66,7 @@ import com.turkcell.lyraapp.ui.theme.LyraAppTheme
 @Composable
 fun CheckoutRoute(
     onNavigateBack: () -> Unit,
-    onNavigateToProfile: () -> Unit,
+    onNavigateToSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CheckoutViewModel = hiltViewModel()
 ) {
@@ -77,7 +77,7 @@ fun CheckoutRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is CheckoutEffect.NavigateBack -> onNavigateBack()
-                is CheckoutEffect.NavigateToProfile -> onNavigateToProfile()
+                is CheckoutEffect.NavigateToSuccess -> onNavigateToSuccess()
                 is CheckoutEffect.ShowError -> snackbarHostState.showSnackbar(effect.message)
             }
         }

@@ -3,6 +3,7 @@ package com.turkcell.lyraapp.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.turkcell.lyraapp.data.home.HomeRepository
+import com.turkcell.lyraapp.data.profile.ProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val homeRepository: HomeRepository,
+    private val profileRepository: ProfileRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState(greeting = greetingForNow()))
@@ -25,6 +27,8 @@ class HomeViewModel @Inject constructor(
 
     private val _effect = Channel<HomeEffect>(Channel.BUFFERED)
     val effect: Flow<HomeEffect> = _effect.receiveAsFlow()
+
+    private var hasCheckedSubscription = false
 
     init {
         loadFeed()
@@ -39,6 +43,15 @@ class HomeViewModel @Inject constructor(
             is HomeIntent.PlaylistClicked -> {
                 viewModelScope.launch {
                     _effect.send(HomeEffect.NavigateToPlaylistDetail(intent.playlistId))
+                }
+            }
+            is HomeIntent.DismissSubscriptionWarning -> {
+                _uiState.update { it.copy(showSubscriptionWarning = false) }
+            }
+            is HomeIntent.UpgradePlanClicked -> {
+                _uiState.update { it.copy(showSubscriptionWarning = false) }
+                viewModelScope.launch {
+                    _effect.send(HomeEffect.NavigateToCheckout(intent.planId))
                 }
             }
         }
@@ -64,6 +77,26 @@ class HomeViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     _effect.send(HomeEffect.ShowError(error.message ?: "Ana sayfa yüklenemedi."))
+                }
+
+            checkSubscription()
+        }
+    }
+
+    private fun checkSubscription() {
+        if (hasCheckedSubscription) return
+        viewModelScope.launch {
+            profileRepository.getProfileInfo()
+                .onSuccess { profile ->
+                    if (profile.membershipType == "one-time" && profile.premiumDaysLeft != null) {
+                        _uiState.update {
+                            it.copy(
+                                showSubscriptionWarning = true,
+                                premiumDaysLeft = profile.premiumDaysLeft
+                            )
+                        }
+                        hasCheckedSubscription = true
+                    }
                 }
         }
     }

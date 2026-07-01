@@ -19,17 +19,20 @@ data class HomeUiState(
     val quickPicks: List<QuickPick> = emptyList(),
     val recentlyPlayed: List<RecentlyPlayed> = emptyList(),
     val playlistsForYou: List<PlaylistForYou> = emptyList(),
-
+    val showSubscriptionWarning: Boolean = false,
+    val premiumDaysLeft: Int? = null
 )
 
 sealed interface HomeIntent {
     data object Retry : HomeIntent
     data class PlaylistClicked(val playlistId: String) : HomeIntent
     data class SongSelected(val song: HomeSong) : HomeIntent
+    data object DismissSubscriptionWarning : HomeIntent
+    data class UpgradePlanClicked(val planId: String) : HomeIntent
 }
-
 sealed interface HomeEffect {
     data class ShowError(val message: String) : HomeEffect
     data class NavigateToPlaylistDetail(val playlistId: String) : HomeEffect
     data class NavigateToNowPlaying(val songId: String) : HomeEffect
+    data class NavigateToCheckout(val planId: String) : HomeEffect
 }

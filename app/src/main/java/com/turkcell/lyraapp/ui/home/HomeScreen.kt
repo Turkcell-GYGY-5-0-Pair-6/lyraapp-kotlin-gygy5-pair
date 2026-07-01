@@ -2,6 +2,7 @@ package com.turkcell.lyraapp.ui.home
 
 import android.R.attr.contentDescription
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,8 +46,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -60,6 +65,7 @@ import com.turkcell.lyraapp.ui.icons.LyraIcons
 fun HomeRoute(
     onSongClick: (String) -> Unit,
     onNavigateToPlaylistDetail: (String) -> Unit,
+    onNavigateToCheckout: (String) -> Unit,
     modifier: Modifier = Modifier,
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
@@ -93,6 +99,8 @@ fun HomeRoute(
                 }
                 is HomeEffect.NavigateToNowPlaying ->
                     onSongClick(effect.songId)
+                is HomeEffect.NavigateToCheckout ->
+                    onNavigateToCheckout(effect.planId)
             }
         }
     }
@@ -117,6 +125,15 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    if (state.showSubscriptionWarning && state.premiumDaysLeft != null) {
+        SubscriptionWarningDialog(
+            daysLeft = state.premiumDaysLeft,
+            onUpgradePlan = { planId -> onIntent(HomeIntent.UpgradePlanClicked(planId)) },
+            onRenewPlan = { planId -> onIntent(HomeIntent.UpgradePlanClicked(planId)) },
+            onDismiss = { onIntent(HomeIntent.DismissSubscriptionWarning) }
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets(0,0,0,0),
@@ -558,6 +575,144 @@ private fun SongGridItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+@Composable
+private fun SubscriptionWarningDialog(
+    daysLeft: Int,
+    onUpgradePlan: (String) -> Unit,
+    onRenewPlan: (String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss
+    ) {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color(0xFF2D1D22))
+                .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(28.dp))
+                .padding(24.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Clock/Timer icon in circle
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF3D2A30)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = LyraIcons.Clock,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB2C5),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                // Title
+                Text(
+                    text = "Premium’un $daysLeft gün sonra bitiyor",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                // Subtitle
+                Text(
+                    text = "Tek seferlik erişimin sona ermek üzere. Kesintisiz dinlemeye devam etmek için yenile ya da aylık aboneliğe geç.",
+                    color = Color(0xFFC0A9AE),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Action button 1: Monthly subscription
+                Button(
+                    onClick = { onUpgradePlan("recurring") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFB2C5),
+                        contentColor = Color(0xFF5D1E31)
+                    )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = LyraIcons.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Aylık aboneliğe geç · ₺59,99",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                // Action button 2: One-time renewal
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { onRenewPlan("one-time") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = LyraIcons.Restart,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "30 gün yenile · ₺79,99",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                // Dismiss button
+                androidx.compose.material3.TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Daha sonra",
+                        color = Color(0xFFC0A9AE),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
     }
 }

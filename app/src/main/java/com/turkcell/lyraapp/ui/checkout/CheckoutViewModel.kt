@@ -95,7 +95,7 @@ class CheckoutViewModel @Inject constructor(
 
             result
                 .onSuccess {
-                    _effect.send(CheckoutEffect.NavigateToProfile)
+                    _effect.send(CheckoutEffect.NavigateToSuccess)
                 }
                 .onFailure { error ->
                     val errorMsg = error.message ?: "Ödeme gerçekleştirilemedi. Lütfen bilgilerinizi kontrol edin."

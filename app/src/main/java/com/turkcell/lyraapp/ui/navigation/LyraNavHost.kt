@@ -30,6 +30,7 @@ import com.turkcell.lyraapp.ui.library.create.CreatePlaylistRoute
 import com.turkcell.lyraapp.ui.profile.ProfileRoute
 import com.turkcell.lyraapp.ui.premium.PremiumRoute
 import com.turkcell.lyraapp.ui.checkout.CheckoutRoute
+import com.turkcell.lyraapp.ui.checkout.success.CheckoutSuccessRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
 import com.turkcell.lyraapp.ui.player.NowPlayingRoute
@@ -99,6 +100,9 @@ fun LyraNavHost(
                         onSongClick = { songId ->
                             navController.navigate("now_playing/$songId")
                         },
+                        onNavigateToCheckout = { planId ->
+                            navController.navigate("checkout/$planId")
+                        }
                     )
                 }
                 composable(LyraDestination.Search.route) { SearchRoute() }
@@ -159,9 +163,19 @@ fun LyraNavHost(
                 ) {
                     CheckoutRoute(
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToProfile = {
-                            navController.navigate(LyraDestination.Profile.route) {
-                                popUpTo(LyraDestination.Home.route) { inclusive = false }
+                        onNavigateToSuccess = {
+                            navController.navigate(LyraDestination.CheckoutSuccess.route) {
+                                popUpTo(LyraDestination.Checkout.route) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(LyraDestination.CheckoutSuccess.route) {
+                    CheckoutSuccessRoute(
+                        onNavigateToHome = {
+                            navController.navigate(LyraDestination.Home.route) {
+                                popUpTo(LyraDestination.Home.route) { inclusive = true }
                                 launchSingleTop = true
                             }
                         }

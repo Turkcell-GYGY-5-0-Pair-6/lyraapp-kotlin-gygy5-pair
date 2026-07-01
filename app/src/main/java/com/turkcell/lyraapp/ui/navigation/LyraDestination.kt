@@ -13,4 +13,5 @@ enum class LyraDestination(val route: String) {
     NowPlaying("now_playing/{songId}"),
     Premium("premium"),
     Checkout("checkout/{planId}"),
+    CheckoutSuccess("checkout_success"),
 }
