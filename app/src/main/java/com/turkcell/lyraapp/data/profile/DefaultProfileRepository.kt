@@ -18,6 +18,16 @@ class DefaultProfileRepository @Inject constructor(
         val last = user.lastName ?: ""
         val initials = ((first.firstOrNull()?.toString() ?: "") + (last.firstOrNull()?.toString() ?: "")).uppercase()
         val isPremium = user.membership != null && user.membership.status == "active"
+        val premiumDaysLeft = if (isPremium && !user.membership?.expiresAt.isNullOrEmpty()) {
+            runCatching {
+                val expires = java.time.Instant.parse(user.membership.expiresAt)
+                val now = java.time.Instant.now()
+                val days = java.time.Duration.between(now, expires).toDays().toInt()
+                if (days < 0) 0 else days
+            }.getOrNull()
+        } else {
+            null
+        }
         UserProfile(
             firstName = first,
             lastName = last,
@@ -26,7 +36,8 @@ class DefaultProfileRepository @Inject constructor(
             playlistsCount = 0,
             followersCount = "0",
             followingCount = "0",
-            initials = if (initials.isEmpty()) "U" else initials
+            initials = if (initials.isEmpty()) "U" else initials,
+            premiumDaysLeft = premiumDaysLeft
         )
     }
 }

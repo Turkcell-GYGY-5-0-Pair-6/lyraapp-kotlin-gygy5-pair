@@ -55,6 +55,7 @@ fun ProfileRoute(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToPremium: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
@@ -75,6 +76,7 @@ fun ProfileRoute(
         isDarkTheme = isDarkTheme,
         onToggleTheme = onToggleTheme,
         onIntent = viewModel::onIntent,
+        onNavigateToPremium = onNavigateToPremium,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
@@ -89,6 +91,7 @@ fun ProfileScreen(
     isDarkTheme: Boolean,
     onToggleTheme: () -> Unit,
     onIntent: (ProfileIntent) -> Unit,
+    onNavigateToPremium: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
@@ -171,8 +174,15 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     // Kullanıcı Adı ve Üyelik Tipi
+                    val subtitleText = buildString {
+                        append("@${user.username}")
+                        append(" · ${user.tier}")
+                        if (user.tier == "Premium" && user.premiumDaysLeft != null) {
+                            append(" · ${user.premiumDaysLeft} gün")
+                        }
+                    }
                     Text(
-                        text = "@${user.username} · ${user.tier}",
+                        text = subtitleText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -192,7 +202,17 @@ fun ProfileScreen(
                         StatItem(value = user.followingCount, label = "Takip")
                     }
 
-                    Spacer(modifier = Modifier.height(28.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Premium Bilgilendirme Kartı
+                    PremiumBanner(
+                        tier = user.tier,
+                        premiumDaysLeft = user.premiumDaysLeft,
+                        onClick = onNavigateToPremium,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     // Görünüm Başlığı
                     Text(
@@ -424,6 +444,78 @@ private fun ProfileOptionItem(
     }
 }
 
+@Composable
+private fun PremiumBanner(
+    tier: String,
+    premiumDaysLeft: Int?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isPremium = tier == "Premium"
+    val gradientColors = if (isPremium) {
+        listOf(Color(0xFF8C5D6C), Color(0xFF5D4037))
+    } else {
+        listOf(Color(0xFF2C2C2C), Color(0xFF1E1E1E))
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Brush.horizontalGradient(gradientColors))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.White.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = LyraIcons.PremiumBadge,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (isPremium) {
+                    if (premiumDaysLeft != null) "Premium · $premiumDaysLeft gün kaldı" else "Premium"
+                } else {
+                    "Premium'a Geç"
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = if (isPremium) {
+                    "Yenile ya da aboneliğe geç"
+                } else {
+                    "Reklamsız ve çevrimdışı müzik keyfi için başla"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+        }
+
+        Icon(
+            imageVector = LyraIcons.ChevronRight,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
 @Preview(name = "Profile - Light Theme", showBackground = true, showSystemUi = true)
 @Composable
 private fun ProfileScreenLightPreview() {
@@ -438,12 +530,14 @@ private fun ProfileScreenLightPreview() {
                     playlistsCount = 127,
                     followersCount = "1.2B",
                     followingCount = "348",
-                    initials = "ZK"
+                    initials = "ZK",
+                    premiumDaysLeft = 3
                 )
             ),
             isDarkTheme = false,
             onToggleTheme = {},
-            onIntent = {}
+            onIntent = {},
+            onNavigateToPremium = {}
         )
     }
 }
@@ -462,12 +556,14 @@ private fun ProfileScreenDarkPreview() {
                     playlistsCount = 127,
                     followersCount = "1.2B",
                     followingCount = "348",
-                    initials = "ZK"
+                    initials = "ZK",
+                    premiumDaysLeft = 3
                 )
             ),
             isDarkTheme = true,
             onToggleTheme = {},
-            onIntent = {}
+            onIntent = {},
+            onNavigateToPremium = {}
         )
     }
 }

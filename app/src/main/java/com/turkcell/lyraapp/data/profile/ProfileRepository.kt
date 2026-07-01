@@ -12,5 +12,6 @@ data class UserProfile(
     val playlistsCount: Int,
     val followersCount: String,
     val followingCount: String,
-    val initials: String
+    val initials: String,
+    val premiumDaysLeft: Int? = null
 )

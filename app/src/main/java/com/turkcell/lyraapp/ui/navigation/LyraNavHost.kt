@@ -28,6 +28,7 @@ import com.turkcell.lyraapp.ui.favorites.FavoritesRoute
 import com.turkcell.lyraapp.ui.library.LibraryRoute
 import com.turkcell.lyraapp.ui.library.create.CreatePlaylistRoute
 import com.turkcell.lyraapp.ui.profile.ProfileRoute
+import com.turkcell.lyraapp.ui.premium.PremiumRoute
 import com.turkcell.lyraapp.ui.search.SearchRoute
 import com.turkcell.lyraapp.ui.playlist.PlaylistDetailRoute
 import com.turkcell.lyraapp.ui.player.NowPlayingRoute
@@ -135,7 +136,15 @@ fun LyraNavHost(
                                 popUpTo(LyraDestination.Home.route) { inclusive = true }
                                 launchSingleTop = true
                             }
+                        },
+                        onNavigateToPremium = {
+                            navController.navigate(LyraDestination.Premium.route)
                         }
+                    )
+                }
+                composable(LyraDestination.Premium.route) {
+                    PremiumRoute(
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
                 composable(

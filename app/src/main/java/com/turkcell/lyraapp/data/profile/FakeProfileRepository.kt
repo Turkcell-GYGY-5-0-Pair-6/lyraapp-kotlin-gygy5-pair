@@ -15,7 +15,8 @@ class FakeProfileRepository @Inject constructor() : ProfileRepository {
                 playlistsCount = 127,
                 followersCount = "1.2B",
                 followingCount = "348",
-                initials = "ZK"
+                initials = "ZK",
+                premiumDaysLeft = 3
             )
         )
     }

@@ -178,3 +178,12 @@
 - Son Güncelleme Tarihi: 30.06.2026
 
 - Sebep: `/api/v1/songs/{id}/stream-url` uç noktasının Premium üyelere özel hale getirilmesi sonucu ücretsiz kullanıcıların da reklamsız/reklamlı oynatma desteğine kavuşmasını sağlamak.
+
+
+### Premium Bilgilendirme ve Plan Seçim Ekranı Entegrasyonu
+
+- Karar: Profil sayfasına premium kalan gün sayısını gösteren bir bilgi kartı eklenmesi ve tıklandığında MVI mimarisiyle tasarlanmış "Premium Plan Seçimi" ekranının açılması.
+
+- Son Güncelleme Tarihi: 01.07.2026
+
+- Sebep: Premium üyeliği teşvik etmek ve kullanıcılara sunulan avantajları/seçenekleri görsel bir paywall arayüzü üzerinden tanıtmak.

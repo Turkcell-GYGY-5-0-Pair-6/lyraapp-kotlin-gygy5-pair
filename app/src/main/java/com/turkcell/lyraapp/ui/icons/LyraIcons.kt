@@ -355,6 +355,34 @@ object LyraIcons {
         )
     }
 
+    val PremiumBadge: ImageVector by lazy {
+        lyraIcon(
+            name = "PremiumBadge",
+            pathData = "M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2zm0,18c-4.41,0-8-3.59-8-8s3.59-8,8-8,8,3.59,8,8-3.59,8-8,8zm0-13.5l1.62,3.28,3.62,0.53-2.62,2.55,0.62,3.61L12,14.77l-3.24,1.7,0.62-3.61-2.62-2.55,3.62-0.53L12,6.5z",
+        )
+    }
+
+    val Block: ImageVector by lazy {
+        lyraIcon(
+            name = "Block",
+            pathData = "M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10,10-4.48,10-10S17.52,2,12,2zm0,18c-4.42,0-8-3.58-8-8,0-1.85,0.63-3.55,1.69-4.9L16.9,18.31C15.55,19.37,13.85,20,12,20zm5.31-3.1L6.9,5.69A7.966,7.966,0,0,1,12,4c4.42,0,8,3.58,8,8,0,1.85-0.63,3.55-1.69,4.9z",
+        )
+    }
+
+    val SkipNext: ImageVector by lazy {
+        lyraIcon(
+            name = "SkipNext",
+            pathData = "M6,18l8.5-6L6,6v12zM16,6v12h2V6h-2z",
+        )
+    }
+
+    val Devices: ImageVector by lazy {
+        lyraIcon(
+            name = "Devices",
+            pathData = "M4,6h18V4H4c-1.1,0-2,0.9-2,2v11H0v3h14v-3H4V6zm19,2h-6c-0.55,0-1,0.45-1,1v10c0,0.55,0.45,1,1,1h6c0.55,0,1-0.45,1-1V9c0-0.55-0.45-1-1-1zm-1,9h-4v-7h4v7z",
+        )
+    }
+
 }
 
 /**
