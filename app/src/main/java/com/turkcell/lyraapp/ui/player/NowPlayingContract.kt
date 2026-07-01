@@ -1,6 +1,7 @@
 package com.turkcell.lyraapp.ui.player
 
 import com.turkcell.lyraapp.data.player.PlaybackState
+import com.turkcell.lyraapp.data.player.SongDownloadState
 
 /**
  * Now Playing ekranı MVI sözleşmesi: State, Intent ve Effect.
@@ -8,7 +9,8 @@ import com.turkcell.lyraapp.data.player.PlaybackState
 data class NowPlayingUiState(
     val isLoading: Boolean = false,
     val playbackState: PlaybackState? = null,
-    val error: String? = null
+    val error: String? = null,
+    val downloadState: SongDownloadState = SongDownloadState.NOT_DOWNLOADED
 )
 
 sealed interface NowPlayingIntent {
@@ -21,6 +23,7 @@ sealed interface NowPlayingIntent {
     data object SkipNext : NowPlayingIntent
     data object SkipPrevious : NowPlayingIntent
     data object BackClicked : NowPlayingIntent
+    data object ToggleDownload : NowPlayingIntent
 }
 
 sealed interface NowPlayingEffect {

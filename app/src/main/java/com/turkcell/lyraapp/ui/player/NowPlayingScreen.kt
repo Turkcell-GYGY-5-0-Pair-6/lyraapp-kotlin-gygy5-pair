@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.turkcell.lyraapp.data.player.PlaybackState
+import com.turkcell.lyraapp.data.player.SongDownloadState
 import com.turkcell.lyraapp.ui.icons.LyraIcons
 import com.turkcell.lyraapp.ui.theme.LyraAppTheme
 
@@ -252,16 +253,51 @@ fun NowPlayingScreen(
                             )
                         }
                         
-                        IconButton(
-                            onClick = { onIntent(NowPlayingIntent.ToggleLike) },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (playback.isLiked) LyraIcons.Favorite else LyraIcons.FavoriteOutlined,
-                                contentDescription = "Beğen",
-                                tint = if (playback.isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(28.dp)
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { onIntent(NowPlayingIntent.ToggleDownload) },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                when (state.downloadState) {
+                                    SongDownloadState.DOWNLOADING -> {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                    SongDownloadState.DOWNLOADED -> {
+                                        Icon(
+                                            imageVector = LyraIcons.DownloadCircle,
+                                            contentDescription = "İndirildi",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
+                                    SongDownloadState.NOT_DOWNLOADED -> {
+                                        Icon(
+                                            imageVector = LyraIcons.Download,
+                                            contentDescription = "İndir",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            IconButton(
+                                onClick = { onIntent(NowPlayingIntent.ToggleLike) },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (playback.isLiked) LyraIcons.Favorite else LyraIcons.FavoriteOutlined,
+                                    contentDescription = "Beğen",
+                                    tint = if (playback.isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
                         }
                     }
 
@@ -484,7 +520,8 @@ private fun NowPlayingScreenPreview() {
                     isLiked = true,
                     artworkStartColor = 0xFFD98E4A,
                     artworkEndColor = 0xFF8A5526
-                )
+                ),
+                downloadState = SongDownloadState.DOWNLOADED
             ),
             onIntent = {}
         )

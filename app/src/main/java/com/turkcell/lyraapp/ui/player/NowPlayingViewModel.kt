@@ -14,6 +14,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.turkcell.lyraapp.data.player.SongDownloadState
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.Job
 
 @HiltViewModel
 class NowPlayingViewModel @Inject constructor(
@@ -28,6 +32,7 @@ class NowPlayingViewModel @Inject constructor(
     val effect: Flow<NowPlayingEffect> = _effect.receiveAsFlow()
 
     private val songId: String? = savedStateHandle["songId"]
+    private var downloadJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -37,6 +42,25 @@ class NowPlayingViewModel @Inject constructor(
                 }
             }
         }
+        
+        viewModelScope.launch {
+            playerRepository.playbackStateFlow
+                .map { it?.songId }
+                .distinctUntilChanged()
+                .collect { id ->
+                    downloadJob?.cancel()
+                    if (id != null) {
+                        downloadJob = viewModelScope.launch {
+                            playerRepository.getSongDownloadState(id).collect { downloadState ->
+                                _uiState.update { it.copy(downloadState = downloadState) }
+                            }
+                        }
+                    } else {
+                        _uiState.update { it.copy(downloadState = SongDownloadState.NOT_DOWNLOADED) }
+                    }
+                }
+        }
+
         songId?.let {
             onIntent(NowPlayingIntent.LoadSong(it))
         }
@@ -57,6 +81,7 @@ class NowPlayingViewModel @Inject constructor(
                     _effect.send(NowPlayingEffect.NavigateBack)
                 }
             }
+            NowPlayingIntent.ToggleDownload -> toggleDownload()
         }
     }
 
@@ -130,6 +155,23 @@ class NowPlayingViewModel @Inject constructor(
         viewModelScope.launch {
             playerRepository.skipToPrevious().onFailure { error ->
                 _effect.send(NowPlayingEffect.ShowError(error.message ?: "Önceki şarkıya geçilemedi."))
+            }
+        }
+    }
+
+    private fun toggleDownload() {
+        val currentSongId = _uiState.value.playbackState?.songId ?: return
+        val currentDownloadState = _uiState.value.downloadState
+
+        viewModelScope.launch {
+            if (currentDownloadState == SongDownloadState.DOWNLOADED) {
+                playerRepository.deleteDownloadedSong(currentSongId).onFailure { error ->
+                    _effect.send(NowPlayingEffect.ShowError(error.message ?: "İndirilen şarkı silinemedi."))
+                }
+            } else if (currentDownloadState == SongDownloadState.NOT_DOWNLOADED) {
+                playerRepository.downloadSong(currentSongId).onFailure { error ->
+                    _effect.send(NowPlayingEffect.ShowError(error.message ?: "Şarkı indirilemedi."))
+                }
             }
         }
     }

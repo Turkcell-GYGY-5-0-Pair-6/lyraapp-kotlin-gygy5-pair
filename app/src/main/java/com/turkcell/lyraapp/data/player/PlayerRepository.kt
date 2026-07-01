@@ -26,6 +26,12 @@ data class PlaybackState(
     val artworkEndColor: Long
 )
 
+enum class SongDownloadState {
+    NOT_DOWNLOADED,
+    DOWNLOADING,
+    DOWNLOADED
+}
+
 interface PlayerRepository {
     val player: ExoPlayer
     val playbackStateFlow: Flow<PlaybackState?>
@@ -40,4 +46,9 @@ interface PlayerRepository {
     suspend fun skipToNext(): Result<Unit>
     suspend fun skipToPrevious(): Result<Unit>
     suspend fun stop(): Result<Unit>
+
+    fun isSongDownloaded(songId: String): Boolean
+    fun getSongDownloadState(songId: String): Flow<SongDownloadState>
+    suspend fun downloadSong(songId: String): Result<Unit>
+    suspend fun deleteDownloadedSong(songId: String): Result<Unit>
 }

@@ -23,6 +23,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +32,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import okhttp3.OkHttpClient
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.Serializable
+import java.io.File
+import java.io.IOException
 
 /**
  * [PlayerRepository] arayüzünün ExoPlayer tabanlı gerçek veri ve oynatma yönetimi uygulamasıdır.
@@ -40,6 +47,8 @@ class DefaultPlayerRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val songsApi: SongsApi,
     private val authRepository: AuthRepository,
+    private val okHttpClient: OkHttpClient,
+    private val json: Json,
 ) : PlayerRepository {
 
     // Arka plan işleri ve asenkron operasyonlar için ana iş parçacığında (Main) çalışan coroutine kapsamı.
@@ -78,6 +87,24 @@ class DefaultPlayerRepository @Inject constructor(
     
     // Şarkının bittiğinde tekrar edip etmeyeceğini tutan değişken.
     private var isRepeatState = false
+
+    // İndirme durumlarını tutan StateFlow
+    private val _downloadStates = MutableStateFlow<Map<String, SongDownloadState>>(emptyMap())
+
+    init {
+        // Uygulama başladığında yerel indirmeleri kontrol edip durum haritasını doldurur.
+        scope.launch(Dispatchers.IO) {
+            val downloadsDir = File(context.filesDir, "downloads")
+            if (downloadsDir.exists()) {
+                val downloadedIds = downloadsDir.listFiles { file ->
+                    file.isFile && file.name.endsWith(".mp3")
+                }?.map { it.nameWithoutExtension } ?: emptyList()
+
+                val statesMap = downloadedIds.associateWith { SongDownloadState.DOWNLOADED }
+                _downloadStates.value = statesMap
+            }
+        }
+    }
 
     // ExoPlayer oynatma olaylarını ve durum değişikliklerini dinleyen olay yöneticisi.
     private val listener = object : Player.Listener {
@@ -171,7 +198,7 @@ class DefaultPlayerRepository @Inject constructor(
     // ExoPlayer üzerindeki güncel durum bilgilerini alıp PlaybackState modeli ile akış üzerinden yayınlar.
     private fun updatePlaybackState() {
         val songId = currentSongId ?: return
-        val song = cachedSongs.find { it.id == songId } ?: return
+        val song = cachedSongs.find { it.id == songId }
 
         val isPlaying = player.isPlaying
         val durationMs = player.duration.coerceAtLeast(0L)
@@ -182,26 +209,97 @@ class DefaultPlayerRepository @Inject constructor(
         val title: String
         val artist: String
         val albumName: String
-        val (startColor, endColor) = if (isAd) {
+        val startColor: Long
+        val endColor: Long
+
+        if (isAd) {
             val mediaItem = currentMediaItem!!
             title = mediaItem.mediaMetadata.title?.toString() ?: "Reklam"
             artist = mediaItem.mediaMetadata.artist?.toString() ?: "Sponsorlu"
             albumName = mediaItem.mediaMetadata.albumTitle?.toString() ?: "Reklam"
-            artworkColorsFor(mediaItem.mediaId)
+            val colors = artworkColorsFor(mediaItem.mediaId)
+            startColor = colors.first
+            endColor = colors.second
         } else {
-            title = song.title
-            artist = song.artist
-            albumName = song.album ?: "Lyra Album"
-            artworkColorsFor(songId)
+            val metadataFile = File(context.filesDir, "downloads/$songId.json")
+            if (metadataFile.exists()) {
+                var loadedFromOffline = false
+                var offlineTitle = ""
+                var offlineArtist = ""
+                var offlineAlbum = ""
+                var offlineStartColor = 0L
+                var offlineEndColor = 0L
+
+                try {
+                    val metadataJson = metadataFile.readText()
+                    var metadata = json.decodeFromString<OfflineMetadata>(metadataJson)
+                    
+                    // Eğer yerel metaveride süre 0 ise ve ExoPlayer gerçek süreyi öğrenmişse JSON'ı güncelle.
+                    if (metadata.durationMs == 0L && durationMs > 0L) {
+                        metadata = metadata.copy(
+                            durationMs = durationMs,
+                            durationText = formatTime(durationMs)
+                        )
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                metadataFile.writeText(json.encodeToString(OfflineMetadata.serializer(), metadata))
+                            } catch (e: Exception) {
+                                // Sessizce yut
+                            }
+                        }
+                    }
+                    offlineTitle = metadata.title
+                    offlineArtist = metadata.artist
+                    offlineAlbum = metadata.albumName
+                    offlineStartColor = metadata.artworkStartColor
+                    offlineEndColor = metadata.artworkEndColor
+                    loadedFromOffline = true
+                } catch (e: Exception) {
+                    loadedFromOffline = false
+                }
+
+                if (loadedFromOffline) {
+                    title = offlineTitle
+                    artist = offlineArtist
+                    albumName = offlineAlbum
+                    startColor = offlineStartColor
+                    endColor = offlineEndColor
+                } else if (song != null) {
+                    title = song.title
+                    artist = song.artist
+                    albumName = song.album ?: "Lyra Album"
+                    val colors = artworkColorsFor(songId)
+                    startColor = colors.first
+                    endColor = colors.second
+                } else {
+                    title = "Bilinmeyen Şarkı"
+                    artist = "Bilinmeyen Sanatçı"
+                    albumName = "Lyra Album"
+                    val colors = artworkColorsFor(songId)
+                    startColor = colors.first
+                    endColor = colors.second
+                }
+            } else if (song != null) {
+                title = song.title
+                artist = song.artist
+                albumName = song.album ?: "Lyra Album"
+                val colors = artworkColorsFor(songId)
+                startColor = colors.first
+                endColor = colors.second
+            } else {
+                return
+            }
         }
+
+        val displayDurationMs = if (durationMs > 0L) durationMs else getOfflineDurationMs(songId)
 
         val newState = PlaybackState(
             songId = songId,
             title = title,
             artist = artist,
             albumName = albumName,
-            durationText = formatTime(durationMs),
-            durationMs = durationMs,
+            durationText = formatTime(displayDurationMs),
+            durationMs = displayDurationMs,
             currentProgressText = formatTime(progressMs),
             currentProgressMs = progressMs,
             isPlaying = isPlaying,
@@ -212,6 +310,18 @@ class DefaultPlayerRepository @Inject constructor(
             artworkEndColor = endColor
         )
         _playbackStateFlow.value = newState
+    }
+
+    private fun getOfflineDurationMs(songId: String): Long {
+        return try {
+            val metadataFile = File(context.filesDir, "downloads/$songId.json")
+            if (metadataFile.exists()) {
+                val metadata = json.decodeFromString<OfflineMetadata>(metadataFile.readText())
+                metadata.durationMs
+            } else 0L
+        } catch (e: Exception) {
+            0L
+        }
     }
 
     // Şarkının sunucudan akış (stream) URL'sini çeker.
@@ -232,11 +342,44 @@ class DefaultPlayerRepository @Inject constructor(
     // Belirtilen şarkıyı hazırlar, ExoPlayer'a yükler ve oynatmayı başlatır.
     override suspend fun getPlaybackState(songId: String): Result<PlaybackState> = withContext(Dispatchers.Main) {
         runCatching {
+            // Eğer şarkı yerel olarak indirilmişse doğrudan yerel dosyadan oynat.
+            val mediaFile = File(context.filesDir, "downloads/$songId.mp3")
+            val metadataFile = File(context.filesDir, "downloads/$songId.json")
+            if (mediaFile.exists() && metadataFile.exists()) {
+                val metadata = json.decodeFromString<OfflineMetadata>(metadataFile.readText())
+                if (currentSongId != songId) {
+                    currentSongId = songId
+
+                    val songMetadata = MediaMetadata.Builder()
+                        .setTitle(metadata.title)
+                        .setArtist(metadata.artist)
+                        .setAlbumTitle(metadata.albumName)
+                        .build()
+
+                    val songMediaItem = MediaItem.Builder()
+                        .setMediaId(songId)
+                        .setUri(Uri.fromFile(mediaFile))
+                        .setMediaMetadata(songMetadata)
+                        .build()
+
+                    pendingAdImpressionId = null
+                    player.setMediaItem(songMediaItem)
+                    player.prepare()
+                }
+                player.play()
+                updatePlaybackState()
+                return@runCatching _playbackStateFlow.value!!
+            }
+
             // Şarkı önbellekte aranır, yoksa listeyi yeniden çeker.
             var song = cachedSongs.find { it.id == songId }
             if (song == null) {
-                getSongList()
-                song = cachedSongs.find { it.id == songId } ?: throw NoSuchElementException("Song not found")
+                try {
+                    getSongList()
+                    song = cachedSongs.find { it.id == songId }
+                } catch (e: Exception) {
+                    // Sessizce yut
+                }
             }
 
             // Şarkının playback bilgilerini (veya reklamı) sunucudan talep eder.
@@ -264,9 +407,9 @@ class DefaultPlayerRepository @Inject constructor(
 
                     // Şarkı meta verilerini hazırlar.
                     val songMetadata = MediaMetadata.Builder()
-                        .setTitle(song.title)
-                        .setArtist(song.artist)
-                        .setAlbumTitle(song.album ?: "Lyra Album")
+                        .setTitle(song?.title ?: playbackData.song?.title ?: "Bilinmeyen Şarkı")
+                        .setArtist(song?.artist ?: playbackData.song?.artist ?: "Bilinmeyen Sanatçı")
+                        .setAlbumTitle(song?.album ?: playbackData.song?.album ?: "Lyra Album")
                         .build()
 
                     val songMediaItem = MediaItem.Builder()
@@ -280,9 +423,9 @@ class DefaultPlayerRepository @Inject constructor(
                 } else {
                     // Şarkı meta verilerini hazırlar.
                     val songMetadata = MediaMetadata.Builder()
-                        .setTitle(song.title)
-                        .setArtist(song.artist)
-                        .setAlbumTitle(song.album ?: "Lyra Album")
+                        .setTitle(song?.title ?: playbackData.song?.title ?: "Bilinmeyen Şarkı")
+                        .setArtist(song?.artist ?: playbackData.song?.artist ?: "Bilinmeyen Sanatçı")
+                        .setAlbumTitle(song?.album ?: playbackData.song?.album ?: "Lyra Album")
                         .build()
 
                     val songMediaItem = MediaItem.Builder()
@@ -411,6 +554,87 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
+    override fun isSongDownloaded(songId: String): Boolean {
+        return _downloadStates.value[songId] == SongDownloadState.DOWNLOADED
+    }
+
+    override fun getSongDownloadState(songId: String): Flow<SongDownloadState> {
+        return _downloadStates.map { states ->
+            states[songId] ?: SongDownloadState.NOT_DOWNLOADED
+        }
+    }
+
+    override suspend fun downloadSong(songId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            _downloadStates.update { it + (songId to SongDownloadState.DOWNLOADING) }
+
+            val streamUrl = getStreamUrl(songId).getOrThrow()
+
+            val request = okhttp3.Request.Builder().url(streamUrl).build()
+            val downloadsDir = File(context.filesDir, "downloads").apply { mkdirs() }
+            val tempFile = File(downloadsDir, "$songId.tmp")
+            val destFile = File(downloadsDir, "$songId.mp3")
+
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("Download failed: $response")
+                val body = response.body ?: throw IOException("Empty body")
+
+                body.byteStream().use { inputStream ->
+                    tempFile.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                if (!tempFile.renameTo(destFile)) {
+                    throw IOException("Could not rename temp file")
+                }
+            }
+
+            val song = cachedSongs.find { it.id == songId }
+            val title = song?.title ?: _playbackStateFlow.value?.title ?: "Bilinmeyen Şarkı"
+            val artist = song?.artist ?: _playbackStateFlow.value?.artist ?: "Bilinmeyen Sanatçı"
+            val albumName = song?.album ?: _playbackStateFlow.value?.albumName ?: "Lyra Album"
+
+            val durationMs = if (songId == _playbackStateFlow.value?.songId) {
+                _playbackStateFlow.value?.durationMs ?: 0L
+            } else {
+                0L
+            }
+            val colors = artworkColorsFor(songId)
+
+            val metadata = OfflineMetadata(
+                songId = songId,
+                title = title,
+                artist = artist,
+                albumName = albumName,
+                durationMs = durationMs,
+                durationText = formatTime(durationMs),
+                artworkStartColor = colors.first,
+                artworkEndColor = colors.second
+            )
+
+            val metadataFile = File(downloadsDir, "$songId.json")
+            val metadataJson = json.encodeToString(OfflineMetadata.serializer(), metadata)
+            metadataFile.writeText(metadataJson)
+
+            _downloadStates.update { it + (songId to SongDownloadState.DOWNLOADED) }
+        }.onFailure { error ->
+            _downloadStates.update { it + (songId to SongDownloadState.NOT_DOWNLOADED) }
+        }
+    }
+
+    override suspend fun deleteDownloadedSong(songId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val downloadsDir = File(context.filesDir, "downloads")
+            val mediaFile = File(downloadsDir, "$songId.mp3")
+            val metadataFile = File(downloadsDir, "$songId.json")
+
+            if (mediaFile.exists()) mediaFile.delete()
+            if (metadataFile.exists()) metadataFile.delete()
+
+            _downloadStates.update { it - songId }
+        }
+    }
+
     companion object {
         
         // Milisaniye cinsinden süreyi "dakika:saniye" (Örn: 3:45) biçiminde formatlar.
@@ -448,6 +672,18 @@ class DefaultPlayerRepository @Inject constructor(
             val g = ((g1 + m) * 255f).roundToInt().coerceIn(0, 255).toLong()
             val b = ((b1 + m) * 255f).roundToInt().coerceIn(0, 255).toLong()
             return (0xFFL shl 24) or (r shl 16) or (g shl 8) or b
-        }
+    }
     }
 }
+
+@Serializable
+data class OfflineMetadata(
+    val songId: String,
+    val title: String,
+    val artist: String,
+    val albumName: String,
+    val durationMs: Long,
+    val durationText: String,
+    val artworkStartColor: Long,
+    val artworkEndColor: Long
+)
