@@ -3,6 +3,7 @@ package com.turkcell.lyraapp.ui.auth.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.turkcell.lyraapp.data.auth.AuthRepository
+import com.turkcell.lyraapp.data.network.toUserFriendlyMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -70,7 +71,10 @@ class LoginViewModel @Inject constructor(
                     }
                 }
                 .onFailure { error ->
-                    _effect.send(LoginEffect.ShowError(error.message ?: "Kod gönderme başarısız."))
+                    val userFriendlyError = error.toUserFriendlyMessage(
+                        fallbackMessage = "Kod gönderme başarısız."
+                    )
+                    _effect.send(LoginEffect.ShowError(userFriendlyError))
                 }
         }
     }
@@ -91,7 +95,10 @@ class LoginViewModel @Inject constructor(
                     _effect.send(LoginEffect.ShowError("Kod tekrar gönderildi."))
                 }
                 .onFailure { error ->
-                    _effect.send(LoginEffect.ShowError(error.message ?: "Kod gönderme başarısız."))
+                    val userFriendlyError = error.toUserFriendlyMessage(
+                        fallbackMessage = "Kod gönderme başarısız."
+                    )
+                    _effect.send(LoginEffect.ShowError(userFriendlyError))
                 }
         }
     }
@@ -115,7 +122,11 @@ class LoginViewModel @Inject constructor(
                     }
                 }
                 .onFailure { error ->
-                    _effect.send(LoginEffect.ShowError(error.message ?: "Kod doğrulama başarısız."))
+                    val userFriendlyError = error.toUserFriendlyMessage(
+                        fallbackMessage = "Kod doğrulama başarısız.",
+                        unauthorizedMessage = "Girdiğiniz doğrulama kodu hatalıdır. Lütfen kontrol edin."
+                    )
+                    _effect.send(LoginEffect.ShowError(userFriendlyError))
                 }
         }
     }

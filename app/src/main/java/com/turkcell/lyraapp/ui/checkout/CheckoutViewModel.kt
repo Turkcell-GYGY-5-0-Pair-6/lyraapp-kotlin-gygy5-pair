@@ -3,6 +3,7 @@ package com.turkcell.lyraapp.ui.checkout
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.turkcell.lyraapp.data.profile.ProfileRepository
+import com.turkcell.lyraapp.data.network.toUserFriendlyMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -98,7 +99,10 @@ class CheckoutViewModel @Inject constructor(
                     _effect.send(CheckoutEffect.NavigateToSuccess)
                 }
                 .onFailure { error ->
-                    val errorMsg = error.message ?: "Ödeme gerçekleştirilemedi. Lütfen bilgilerinizi kontrol edin."
+                    val errorMsg = error.toUserFriendlyMessage(
+                        fallbackMessage = "Ödeme gerçekleştirilemedi. Lütfen bilgilerinizi kontrol edin.",
+                        unauthorizedMessage = "Ödeme gerçekleştirilemedi. Kart bilgilerinizi kontrol edip tekrar deneyin."
+                    )
                     _uiState.update { it.copy(error = errorMsg) }
                     _effect.send(CheckoutEffect.ShowError(errorMsg))
                 }

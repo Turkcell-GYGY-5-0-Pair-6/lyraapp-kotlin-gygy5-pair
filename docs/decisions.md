@@ -213,3 +213,11 @@
 - Son Güncelleme Tarihi: 01.07.2026
 
 - Sebep: Beğeni durumunun uygulamanın farklı ekranlarında tutarsızlığa yol açmasını önlemek, tek yönlü veri akışını korumak ve beğeni bilgisini oturumlar arasında kalıcı hale getirmek.
+
+### Türkçe ve Kullanıcı Dostu Hata Yönetimi Entegrasyonu
+
+- Karar: Uygulamada meydana gelen ağ ve HTTP hatalarının (örneğin OTP doğrulaması veya ödeme işlemleri sırasında dönen HTTP 401 Unauthorized) kullanıcıya teknik detaylar yerine anlaşılır Türkçe mesajlarla yansıtılması amacıyla bir `toUserFriendlyMessage` extension fonksiyonu oluşturulmuştur. Bu fonksiyon HttpException durum kodlarına göre hata mesajları üretir.
+
+- Son Güncelleme Tarihi: 01.07.2026
+
+- Sebep: Kullanıcı deneyimini iyileştirmek, HTTP 401 vb. teknik hata kodlarını gizlemek ve kullanıcıların hataları anlayıp doğru aksiyonlar almalarını sağlamak.
