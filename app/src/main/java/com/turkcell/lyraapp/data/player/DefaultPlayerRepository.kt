@@ -4,6 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -589,7 +596,11 @@ class DefaultPlayerRepository @Inject constructor(
                 }
             }
 
-            val song = cachedSongs.find { it.id == songId }
+            var song = cachedSongs.find { it.id == songId }
+            if (song == null) {
+                getSongList()
+                song = cachedSongs.find { it.id == songId }
+            }
             val title = song?.title ?: _playbackStateFlow.value?.title ?: "Bilinmeyen Şarkı"
             val artist = song?.artist ?: _playbackStateFlow.value?.artist ?: "Bilinmeyen Sanatçı"
             val albumName = song?.album ?: _playbackStateFlow.value?.albumName ?: "Lyra Album"
@@ -617,6 +628,7 @@ class DefaultPlayerRepository @Inject constructor(
             metadataFile.writeText(metadataJson)
 
             _downloadStates.update { it + (songId to SongDownloadState.DOWNLOADED) }
+            showDownloadCompleteNotification(title, songId)
         }.onFailure { error ->
             _downloadStates.update { it + (songId to SongDownloadState.NOT_DOWNLOADED) }
         }
@@ -632,6 +644,46 @@ class DefaultPlayerRepository @Inject constructor(
             if (metadataFile.exists()) metadataFile.delete()
 
             _downloadStates.update { it - songId }
+        }
+    }
+
+    private fun showDownloadCompleteNotification(songTitle: String, songId: String) {
+        val channelId = "song_downloads"
+        val notificationId = songId.hashCode()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Şarkı İndirmeleri"
+            val descriptionText = "Şarkı indirme tamamlandığında gösterilen bildirimler"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(channelId, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(com.turkcell.lyraapp.R.drawable.ic_download_done)
+            .setContentTitle("İndirme tamamlandı")
+            .setContentText("\"$songTitle\" çevrimdışı kullanıma hazır")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+
+        try {
+            val notificationManager = NotificationManagerCompat.from(context)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    notificationManager.notify(notificationId, builder.build())
+                }
+            } else {
+                notificationManager.notify(notificationId, builder.build())
+            }
+        } catch (e: SecurityException) {
+            // Güvenle yut.
         }
     }
 

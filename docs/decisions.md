@@ -196,3 +196,12 @@
 - Son Güncelleme Tarihi: 01.07.2026
 
 - Sebep: Profil bilgileri ve üyelik (membership) durumu birbiriyle doğrudan ilişkili olduğundan, ek bir repository ve DI katmanı oluşturmak yerine veri bütünlüğünü tek bir depo (`ProfileRepository`) üzerinden yöneterek mimari sadeleştirme sağlamak.
+
+
+### Şarkı İndirme Tamamlandı Bildirim Entegrasyonu
+
+- Karar: Şarkı indirme işlemi başarıyla tamamlandığında, `DefaultPlayerRepository.downloadSong` metodunda tetiklenecek şekilde sistem bildirim kanalı ve bildirim oluşturularak kullanıcıya bilgi verilmesi. İndirme tamamlandı ikonu olarak yatay çizgi ve onay imi içeren `ic_download_done.xml` vektör görselinin kullanılması.
+
+- Son Güncelleme Tarihi: 01.07.2026
+
+- Sebep: İndirme işlemlerinin durumunun kullanıcı tarafından arka planda veya bildirim çekmecesinde takip edilebilmesini sağlamak ve indirme işleminin başarıyla bittiğini görünür kılmak.
