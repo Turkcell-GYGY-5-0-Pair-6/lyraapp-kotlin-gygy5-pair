@@ -33,7 +33,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -105,6 +109,7 @@ fun PlaylistDetailScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
+    var showMenu by remember { mutableStateOf(false) }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -156,12 +161,28 @@ fun PlaylistDetailScreen(
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
-                        IconButton(onClick = { /* Ek Seçenekler */ }) {
-                            Icon(
-                                imageVector = LyraIcons.MoreVert,
-                                contentDescription = "Seçenekler",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = LyraIcons.MoreVert,
+                                    contentDescription = "Seçenekler",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            if (playlist.creator == "Kitaplığın") {
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Çalma Listesini Sil") },
+                                        onClick = {
+                                            showMenu = false
+                                            onIntent(PlaylistDetailIntent.DeletePlaylist)
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -169,7 +190,7 @@ fun PlaylistDetailScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .navigationBarsPadding(),
-                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
+                        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 88.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         // Header info & Artwork
@@ -470,18 +491,7 @@ private fun PlaylistSongRowItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // More options icon
-        IconButton(
-            onClick = { /* Seçenekler */ },
-            modifier = Modifier.size(24.dp)
-        ) {
-            Icon(
-                imageVector = LyraIcons.MoreVert,
-                contentDescription = "Seçenekler",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+
     }
 }
 

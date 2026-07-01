@@ -381,24 +381,7 @@ private fun LibraryPlaylistItem(
             }
         }
 
-        // Sağ İkon
-        if (item.isPinned) {
-            Icon(
-                imageVector = LyraIcons.PushPin,
-                contentDescription = "Sabitlendi",
-                tint = MaterialTheme.colorScheme.primary, // Sabitleme ikonu pembe/gül rengi
-                modifier = Modifier.size(18.dp)
-            )
-        } else {
-            IconButton(onClick = { /* Menü aç */ }) {
-                Icon(
-                    imageVector = LyraIcons.MoreVert,
-                    contentDescription = "Seçenekler",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
+
     }
 }
 

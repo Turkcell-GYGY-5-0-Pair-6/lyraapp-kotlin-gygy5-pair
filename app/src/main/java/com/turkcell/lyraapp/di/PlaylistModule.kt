@@ -1,7 +1,7 @@
 package com.turkcell.lyraapp.di
 
 import com.turkcell.lyraapp.data.playlist.PlaylistRepository
-import com.turkcell.lyraapp.data.playlist.FakePlaylistRepository
+import com.turkcell.lyraapp.data.playlist.DefaultPlaylistRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,6 +15,6 @@ abstract class PlaylistModule {
     @Binds
     @Singleton
     abstract fun bindPlaylistRepository(
-        fakePlaylistRepository: FakePlaylistRepository
+        defaultPlaylistRepository: DefaultPlaylistRepository
     ): PlaylistRepository
 }

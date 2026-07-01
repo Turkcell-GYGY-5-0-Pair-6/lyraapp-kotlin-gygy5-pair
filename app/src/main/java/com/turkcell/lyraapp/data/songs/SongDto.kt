@@ -30,6 +30,7 @@ data class SongDto(
     val title: String,
     val artist: String,
     val album: String? = null,
+    val durationMs: Int? = null,
 )
 
 /**

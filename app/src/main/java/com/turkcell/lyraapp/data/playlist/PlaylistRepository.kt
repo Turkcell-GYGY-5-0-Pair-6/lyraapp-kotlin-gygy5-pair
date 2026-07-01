@@ -34,4 +34,5 @@ interface PlaylistRepository {
     suspend fun togglePlaylistDownload(playlistId: String): Result<Unit>
     suspend fun toggleShuffle(playlistId: String): Result<Unit>
     suspend fun playPlaylist(playlistId: String): Result<Unit>
+    suspend fun deletePlaylist(playlistId: String): Result<Unit>
 }

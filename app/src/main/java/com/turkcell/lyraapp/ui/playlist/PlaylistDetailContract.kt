@@ -20,6 +20,7 @@ sealed interface PlaylistDetailIntent {
     data object PlayPlaylist : PlaylistDetailIntent
     data class SongClicked(val songId: String) : PlaylistDetailIntent
     data object BackClicked : PlaylistDetailIntent
+    data object DeletePlaylist : PlaylistDetailIntent
 }
 
 sealed interface PlaylistDetailEffect {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -207,6 +208,7 @@ fun LyraNavHost(
             }
 
             if (shouldShowMiniPlayer(currentRoute)) {
+                val showBottomBar = isTopLevelRoute(currentRoute)
                 MiniPlayerRoute(
                     onCardClick = { songId ->
                         navController.navigate("now_playing/$songId") {
@@ -215,7 +217,13 @@ fun LyraNavHost(
                     },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = innerPadding.calculateBottomPadding())
+                        .then(
+                            if (showBottomBar) {
+                                Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+                            } else {
+                                Modifier.navigationBarsPadding()
+                            }
+                        )
                 )
             }
         }
@@ -268,7 +276,6 @@ private fun shouldShowMiniPlayer(route: String?): Boolean {
     val isAuth = route == LyraDestination.Login.route || route == LyraDestination.Register.route
     val isNowPlaying = route.startsWith("now_playing")
     val isProfile = route == LyraDestination.Profile.route
-    val isPlaylistDetail = route == LyraDestination.PlaylistDetail.route || route.startsWith("playlist_detail")
     val isCheckout = route.startsWith("checkout")
-    return !isAuth && !isNowPlaying && !isProfile && !isPlaylistDetail && !isCheckout
+    return !isAuth && !isNowPlaying && !isProfile && !isCheckout
 }

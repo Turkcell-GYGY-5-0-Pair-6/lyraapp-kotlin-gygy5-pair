@@ -1,7 +1,7 @@
 package com.turkcell.lyraapp.di
 
 import com.turkcell.lyraapp.data.library.LibraryRepository
-import com.turkcell.lyraapp.data.library.FakeLibraryRepository
+import com.turkcell.lyraapp.data.library.DefaultLibraryRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,6 +15,6 @@ abstract class LibraryModule {
     @Binds
     @Singleton
     abstract fun bindLibraryRepository(
-        fakeLibraryRepository: FakeLibraryRepository
+        defaultLibraryRepository: DefaultLibraryRepository
     ): LibraryRepository
 }

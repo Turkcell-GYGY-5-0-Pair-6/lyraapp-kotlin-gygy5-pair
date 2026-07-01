@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.turkcell.lyraapp.data.player.PlayerRepository
+import com.turkcell.lyraapp.data.playlist.PlaylistDetail
 
 @HiltViewModel
 class PlaylistDetailViewModel @Inject constructor(
     private val playlistRepository: PlaylistRepository,
+    private val playerRepository: PlayerRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -32,6 +35,14 @@ class PlaylistDetailViewModel @Inject constructor(
     init {
         playlistId?.let {
             onIntent(PlaylistDetailIntent.LoadPlaylist(it))
+        }
+
+        viewModelScope.launch {
+            playerRepository.playbackStateFlow.collect { state ->
+                _uiState.update { current ->
+                    current.copy(playlist = updateSongsPlayingState(current.playlist))
+                }
+            }
         }
     }
 
@@ -53,6 +64,7 @@ class PlaylistDetailViewModel @Inject constructor(
                     _effect.send(PlaylistDetailEffect.NavigateBack)
                 }
             }
+            PlaylistDetailIntent.DeletePlaylist -> deletePlaylist()
         }
     }
 
@@ -64,7 +76,7 @@ class PlaylistDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = false) }
             result
                 .onSuccess { detail ->
-                    _uiState.update { it.copy(playlist = detail) }
+                    _uiState.update { it.copy(playlist = updateSongsPlayingState(detail)) }
                 }
                 .onFailure { error ->
                     val errorMsg = error.message ?: "Playlist detayları yüklenemedi."
@@ -129,6 +141,10 @@ class PlaylistDetailViewModel @Inject constructor(
             val result = playlistRepository.playPlaylist(currentId)
             result.onSuccess {
                 reloadPlaylistDirectly(currentId)
+                val firstSongId = _uiState.value.playlist?.songs?.firstOrNull()?.id
+                if (firstSongId != null) {
+                    _effect.send(PlaylistDetailEffect.NavigateToNowPlaying(firstSongId))
+                }
             }.onFailure { error ->
                 _effect.send(PlaylistDetailEffect.ShowError(error.message ?: "Çalma listesi oynatılamadı."))
             }
@@ -137,7 +153,33 @@ class PlaylistDetailViewModel @Inject constructor(
 
     private suspend fun reloadPlaylistDirectly(id: String) {
         playlistRepository.getPlaylistDetail(id).onSuccess { detail ->
-            _uiState.update { it.copy(playlist = detail) }
+            _uiState.update { it.copy(playlist = updateSongsPlayingState(detail)) }
+        }
+    }
+
+    private fun updateSongsPlayingState(playlist: PlaylistDetail?): PlaylistDetail? {
+        if (playlist == null) return null
+        val currentPlayingSongId = playerRepository.player.currentMediaItem?.mediaId
+        val isPlayerPlaying = playerRepository.player.isPlaying
+        val updatedSongs = playlist.songs.map { song ->
+            song.copy(isPlaying = song.id == currentPlayingSongId && isPlayerPlaying)
+        }
+        return playlist.copy(songs = updatedSongs)
+    }
+
+    private fun deletePlaylist() {
+        val currentId = playlistId ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = playlistRepository.deletePlaylist(currentId)
+            _uiState.update { it.copy(isLoading = false) }
+            result
+                .onSuccess {
+                    _effect.send(PlaylistDetailEffect.NavigateBack)
+                }
+                .onFailure { error ->
+                    _effect.send(PlaylistDetailEffect.ShowError(error.message ?: "Çalma listesi silinemedi."))
+                }
         }
     }
 }

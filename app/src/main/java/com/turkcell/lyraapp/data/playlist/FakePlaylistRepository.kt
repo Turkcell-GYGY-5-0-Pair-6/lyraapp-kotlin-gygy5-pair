@@ -93,4 +93,9 @@ class FakePlaylistRepository @Inject constructor(
         currentPlaylist = currentPlaylist.copy(isPlaying = !currentPlaylist.isPlaying)
         return Result.success(Unit)
     }
+
+    override suspend fun deletePlaylist(playlistId: String): Result<Unit> {
+        delay(200L)
+        return Result.success(Unit)
+    }
 }
