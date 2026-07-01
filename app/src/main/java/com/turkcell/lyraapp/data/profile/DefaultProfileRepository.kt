@@ -22,9 +22,19 @@ class DefaultProfileRepository @Inject constructor(
         val isPremium = user.membership != null && user.membership.status == "active"
         val premiumDaysLeft = if (isPremium && !user.membership?.expiresAt.isNullOrEmpty()) {
             runCatching {
-                val expires = java.time.Instant.parse(user.membership.expiresAt)
-                val now = java.time.Instant.now()
-                val days = java.time.Duration.between(now, expires).toDays().toInt()
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US).apply {
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
+                }
+                val cleanDateStr = if (user.membership.expiresAt.length >= 19) {
+                    user.membership.expiresAt.substring(0, 19)
+                } else {
+                    user.membership.expiresAt
+                }
+                val expiresDate = sdf.parse(cleanDateStr)
+                val expiresMillis = expiresDate?.time ?: 0L
+                val nowMillis = System.currentTimeMillis()
+                val diffMillis = expiresMillis - nowMillis
+                val days = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
                 if (days < 0) 0 else days
             }.getOrNull()
         } else {
