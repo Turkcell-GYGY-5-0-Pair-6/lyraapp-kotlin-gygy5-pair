@@ -11,6 +11,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.turkcell.lyraapp.data.songs.SongDto
 import com.turkcell.lyraapp.data.songs.SongsApi
 import com.turkcell.lyraapp.data.songs.RecordPlayRequest
+import com.turkcell.lyraapp.data.songs.PlaybackNextRequest
+import com.turkcell.lyraapp.data.songs.AdCompleteRequest
 import com.turkcell.lyraapp.data.auth.AuthRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -65,6 +67,9 @@ class DefaultPlayerRepository @Inject constructor(
     // O an çalınmakta olan veya yüklenen şarkının benzersiz kimliği.
     private var currentSongId: String? = null
     
+    // Aktif reklam gösterimi kimliği.
+    private var pendingAdImpressionId: String? = null
+    
     // Şarkının beğenilme (favori) durumunu tutan değişken.
     private var isLikedState = false
     
@@ -110,6 +115,28 @@ class DefaultPlayerRepository @Inject constructor(
         ) {
             updatePlaybackState()
         }
+
+        // Medya öğesi geçişlerinde reklam izleme tamamlandığını bildirmek için tetiklenir.
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            updatePlaybackState()
+            val impressionId = pendingAdImpressionId
+            if (impressionId != null && (mediaItem == null || !mediaItem.mediaId.startsWith("ad_"))) {
+                pendingAdImpressionId = null
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        val token = authRepository.getAccessToken()
+                        if (token != null) {
+                            songsApi.adComplete(
+                                authorization = "Bearer $token",
+                                request = AdCompleteRequest(impressionId)
+                            )
+                        }
+                    } catch (e: Exception) {
+                        // Hataları sessizce yut
+                    }
+                }
+            }
+        }
     }
 
     // Şarkı listesini getiren yardımcı metot. Önbellek boşsa sunucuya istek atar.
@@ -149,13 +176,30 @@ class DefaultPlayerRepository @Inject constructor(
         val isPlaying = player.isPlaying
         val durationMs = player.duration.coerceAtLeast(0L)
         val progressMs = player.currentPosition.coerceAtLeast(0L)
-        val (startColor, endColor) = artworkColorsFor(songId)
+
+        val currentMediaItem = player.currentMediaItem
+        val isAd = currentMediaItem?.mediaId?.startsWith("ad_") == true
+        val title: String
+        val artist: String
+        val albumName: String
+        val (startColor, endColor) = if (isAd) {
+            val mediaItem = currentMediaItem!!
+            title = mediaItem.mediaMetadata.title?.toString() ?: "Reklam"
+            artist = mediaItem.mediaMetadata.artist?.toString() ?: "Sponsorlu"
+            albumName = mediaItem.mediaMetadata.albumTitle?.toString() ?: "Reklam"
+            artworkColorsFor(mediaItem.mediaId)
+        } else {
+            title = song.title
+            artist = song.artist
+            albumName = song.album ?: "Lyra Album"
+            artworkColorsFor(songId)
+        }
 
         val newState = PlaybackState(
             songId = songId,
-            title = song.title,
-            artist = song.artist,
-            albumName = song.album ?: "Lyra Album",
+            title = title,
+            artist = artist,
+            albumName = albumName,
             durationText = formatTime(durationMs),
             durationMs = durationMs,
             currentProgressText = formatTime(progressMs),
@@ -172,7 +216,8 @@ class DefaultPlayerRepository @Inject constructor(
 
     // Şarkının sunucudan akış (stream) URL'sini çeker.
     override suspend fun getStreamUrl(songId: String): Result<String> = runCatching {
-        songsApi.getStreamUrl(songId).data.url
+        val token = authRepository.getAccessToken() ?: throw IllegalStateException("Token yok")
+        songsApi.getStreamUrl("Bearer $token", songId).data.url
     }
 
     // Aktif şarkı kimliğini ayarlar ve asenkron olarak oynatma durumunu günceller.
@@ -184,7 +229,7 @@ class DefaultPlayerRepository @Inject constructor(
         }
     }
 
-    // Belirtilen şarkıyı hazırlar, ExoPlayer'a yükler, oynatmayı başlatır ve backend tarafına dinlenme kaydı gönderir.
+    // Belirtilen şarkıyı hazırlar, ExoPlayer'a yükler ve oynatmayı başlatır.
     override suspend fun getPlaybackState(songId: String): Result<PlaybackState> = withContext(Dispatchers.Main) {
         runCatching {
             // Şarkı önbellekte aranır, yoksa listeyi yeniden çeker.
@@ -194,45 +239,65 @@ class DefaultPlayerRepository @Inject constructor(
                 song = cachedSongs.find { it.id == songId } ?: throw NoSuchElementException("Song not found")
             }
 
-            // Şarkının imzalı akış bağlantısını sunucudan talep eder.
-            val streamUrl = songsApi.getStreamUrl(songId).data.url
+            // Şarkının playback bilgilerini (veya reklamı) sunucudan talep eder.
+            val token = authRepository.getAccessToken() ?: throw IllegalStateException("Oturum açılmadı. Lütfen giriş yapın.")
+            val response = songsApi.getPlaybackNext("Bearer $token", PlaybackNextRequest(songId))
+            val playbackData = response.data
 
             // Eğer oynatılmak istenen şarkı şu an yüklü olandan farklıysa ExoPlayer'a yükler.
             if (currentSongId != songId) {
                 currentSongId = songId
-                
-                // Medya meta verilerini hazırlar.
-                val mediaMetadata = MediaMetadata.Builder()
-                    .setTitle(song.title)
-                    .setArtist(song.artist)
-                    .setAlbumTitle(song.album ?: "Lyra Album")
-                    .build()
 
-                // Oynatılacak medya öğesini URL ve meta verileri ile oluşturur.
-                val mediaItem = MediaItem.Builder()
-                    .setUri(Uri.parse(streamUrl))
-                    .setMediaMetadata(mediaMetadata)
-                    .build()
+                if (playbackData.type == "ad" && playbackData.ad != null && playbackData.adStream != null && playbackData.impressionId != null) {
+                    // Reklam meta verilerini hazırlar.
+                    val adMetadata = MediaMetadata.Builder()
+                        .setTitle(playbackData.ad.title)
+                        .setArtist(playbackData.ad.advertiser)
+                        .setAlbumTitle("Reklam")
+                        .build()
 
-                player.setMediaItem(mediaItem)
+                    val adMediaItem = MediaItem.Builder()
+                        .setMediaId("ad_${playbackData.impressionId}")
+                        .setUri(Uri.parse(playbackData.adStream.url))
+                        .setMediaMetadata(adMetadata)
+                        .build()
+
+                    // Şarkı meta verilerini hazırlar.
+                    val songMetadata = MediaMetadata.Builder()
+                        .setTitle(song.title)
+                        .setArtist(song.artist)
+                        .setAlbumTitle(song.album ?: "Lyra Album")
+                        .build()
+
+                    val songMediaItem = MediaItem.Builder()
+                        .setMediaId(songId)
+                        .setUri(Uri.parse(playbackData.stream?.url ?: ""))
+                        .setMediaMetadata(songMetadata)
+                        .build()
+
+                    pendingAdImpressionId = playbackData.impressionId
+                    player.setMediaItems(listOf(adMediaItem, songMediaItem))
+                } else {
+                    // Şarkı meta verilerini hazırlar.
+                    val songMetadata = MediaMetadata.Builder()
+                        .setTitle(song.title)
+                        .setArtist(song.artist)
+                        .setAlbumTitle(song.album ?: "Lyra Album")
+                        .build()
+
+                    val songMediaItem = MediaItem.Builder()
+                        .setMediaId(songId)
+                        .setUri(Uri.parse(playbackData.stream?.url ?: ""))
+                        .setMediaMetadata(songMetadata)
+                        .build()
+
+                    pendingAdImpressionId = null
+                    player.setMediaItem(songMediaItem)
+                }
+
                 player.prepare()
             }
             player.play()
-
-            // Dinleme istatistiğini kaydetmek üzere asenkron olarak sunucuya istek gönderir.
-            scope.launch(Dispatchers.IO) {
-                try {
-                    val token = authRepository.getAccessToken()
-                    if (token != null) {
-                        songsApi.recordPlay(
-                            authorization = "Bearer $token",
-                            request = RecordPlayRequest(songId)
-                        )
-                    }
-                } catch (e: Exception) {
-                    // Hataları sessizce yut
-                }
-            }
 
             updatePlaybackState()
             _playbackStateFlow.value!!

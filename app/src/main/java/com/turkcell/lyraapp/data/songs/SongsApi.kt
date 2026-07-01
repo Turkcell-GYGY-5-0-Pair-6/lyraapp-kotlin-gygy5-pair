@@ -40,7 +40,28 @@ interface SongsApi {
      * önbelleğe alınmamalı, oynatmadan hemen önce alınmalıdır (bkz. openapi.json /stream-url).
      */
     @GET("api/v1/songs/{id}/stream-url")
-    suspend fun getStreamUrl(@Path("id") id: String): StreamUrlEnvelope
+    suspend fun getStreamUrl(
+        @Header("Authorization") authorization: String,
+        @Path("id") id: String
+    ): StreamUrlEnvelope
+
+    /**
+     * Bir sonraki oynatılacak öğeyi (şarkı veya reklam + şarkı) döner.
+     */
+    @POST("api/v1/me/playback/next")
+    suspend fun getPlaybackNext(
+        @Header("Authorization") authorization: String,
+        @Body request: PlaybackNextRequest
+    ): PlaybackResponseDto
+
+    /**
+     * Reklamın izlendiğini sunucuya bildirir.
+     */
+    @POST("api/v1/me/playback/ad-complete")
+    suspend fun adComplete(
+        @Header("Authorization") authorization: String,
+        @Body request: AdCompleteRequest
+    ): AdCompleteResponse
 
     /**
      * Kullanıcıya özel önerilen şarkıları listeler.
@@ -107,4 +128,55 @@ data class RecordPlayResponse(
 @Serializable
 data class RecordPlayResponseData(
     val recorded: Boolean,
+)
+
+@Serializable
+data class PlaybackNextRequest(
+    val songId: String
+)
+
+@Serializable
+data class PlaybackResponseDto(
+    val data: PlaybackDataDto
+)
+
+@Serializable
+data class PlaybackDataDto(
+    val type: String, // "song" | "ad"
+    val song: SongDto? = null,
+    val stream: StreamLinkDto? = null,
+    val ad: AdDto? = null,
+    val adStream: StreamLinkDto? = null,
+    val impressionId: String? = null
+)
+
+@Serializable
+data class StreamLinkDto(
+    val url: String,
+    val expiresAt: String,
+    val mimeType: String
+)
+
+@Serializable
+data class AdDto(
+    val id: String,
+    val title: String,
+    val advertiser: String,
+    val durationMs: Int,
+    val mimeType: String
+)
+
+@Serializable
+data class AdCompleteRequest(
+    val impressionId: String
+)
+
+@Serializable
+data class AdCompleteResponse(
+    val data: AdCompleteResponseData
+)
+
+@Serializable
+data class AdCompleteResponseData(
+    val completed: Boolean
 )

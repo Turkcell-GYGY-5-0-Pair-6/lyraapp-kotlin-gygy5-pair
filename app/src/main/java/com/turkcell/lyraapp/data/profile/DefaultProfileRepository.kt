@@ -17,11 +17,12 @@ class DefaultProfileRepository @Inject constructor(
         val first = user.firstName ?: ""
         val last = user.lastName ?: ""
         val initials = ((first.firstOrNull()?.toString() ?: "") + (last.firstOrNull()?.toString() ?: "")).uppercase()
+        val isPremium = user.membership != null && user.membership.status == "active"
         UserProfile(
             firstName = first,
             lastName = last,
             username = user.phone ?: "",
-            tier = "Premium",
+            tier = if (isPremium) "Premium" else "Free",
             playlistsCount = 0,
             followersCount = "0",
             followingCount = "0",

@@ -161,3 +161,20 @@
 - Son Güncelleme Tarihi: 20.06.2026
 
 - Sebep: Ekranlardaki profil bilgilerini (isim, soyisim, kullanıcı adı ve avatar baş harfleri) gerçek kullanıcı verileriyle dinamik olarak doldurmak.
+
+### Dinamik Üyelik Seviyesi (Tier) Entegrasyonu
+
+- Karar: Profil ekranındaki üyelik seviyesinin sabit `"Premium"` değeri yerine, `/api/v1/me` adresinden dönen aktif üyelik nesnesi (`membership`) kontrol edilerek `"Premium"` veya `"Free"` olarak dinamik yansıtılması.
+
+- Son Güncelleme Tarihi: 30.06.2026
+
+- Sebep: OpenAPI spesifikasyonundaki yeni üyelik (`Membership`) yapısıyla uyumlu çalışmak ve kullanıcı tipini doğru göstermek.
+
+
+### Reklam Destekli Oynatma ve Sunucu Yetkilendirmeli Oynatıcı Entegrasyonu
+
+- Karar: Şarkı oynatma başlatıldığında (`DefaultPlayerRepository.getPlaybackState`) doğrudan akış URL'si çekmek yerine `/api/v1/me/playback/next` endpoint'inin kullanılması. Ücretsiz kullanıcılar için dönen reklam medyalarının ExoPlayer çalma listesi aracılığıyla araya eklenmesi ve tamamlandığında asenkron `/api/v1/me/playback/ad-complete` çağrısı yapılması. Reklam sırasında çalma durumunun reklam başlığı ve görsel renkleriyle güncellenmesi.
+
+- Son Güncelleme Tarihi: 30.06.2026
+
+- Sebep: `/api/v1/songs/{id}/stream-url` uç noktasının Premium üyelere özel hale getirilmesi sonucu ücretsiz kullanıcıların da reklamsız/reklamlı oynatma desteğine kavuşmasını sağlamak.

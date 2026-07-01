@@ -58,5 +58,16 @@ data class UserDto(
     val firstName: String? = null,
     val lastName: String? = null,
     val birthDate: String? = null,
-    val profileCompleted: Boolean = false
+    val profileCompleted: Boolean = false,
+    val membership: MembershipDto? = null
+)
+
+@Serializable
+data class MembershipDto(
+    val planId: String,
+    val type: String, // "one-time" | "recurring"
+    val status: String, // "active" | "expired"
+    val autoRenew: Boolean,
+    val startedAt: String,
+    val expiresAt: String
 )
