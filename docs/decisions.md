@@ -205,3 +205,11 @@
 - Son Güncelleme Tarihi: 01.07.2026
 
 - Sebep: İndirme işlemlerinin durumunun kullanıcı tarafından arka planda veya bildirim çekmecesinde takip edilebilmesini sağlamak ve indirme işleminin başarıyla bittiğini görünür kılmak.
+
+### Dinamik ve Senkronize Favoriler (Beğenilen Şarkılar) Entegrasyonu
+
+- Karar: Favoriler/beğeniler sistemi için sunucu API desteği bulunmadığından verilerin `favorites.json` dosyasında yerel olarak saklanması ve başlangıçta boş bir liste ile başlatılması. Tüm ekranların (NowPlaying, MiniPlayer, PlaylistDetail, Favorites) beğeni durumunu `FavoritesRepository` (Flow tabanlı) üzerinden tek bir kaynaktan yönetmesi ve senkronize etmesi.
+
+- Son Güncelleme Tarihi: 01.07.2026
+
+- Sebep: Beğeni durumunun uygulamanın farklı ekranlarında tutarsızlığa yol açmasını önlemek, tek yönlü veri akışını korumak ve beğeni bilgisini oturumlar arasında kalıcı hale getirmek.

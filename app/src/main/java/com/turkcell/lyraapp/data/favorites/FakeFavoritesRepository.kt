@@ -1,68 +1,89 @@
 package com.turkcell.lyraapp.data.favorites
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import java.io.File
 import javax.inject.Inject
+import javax.inject.Singleton
 
-class FakeFavoritesRepository @Inject constructor() : FavoritesRepository {
+@Singleton
+class FakeFavoritesRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val json: Json
+) : FavoritesRepository {
+
+    private val _favoriteSongsFlow = MutableStateFlow<List<FavoriteSong>>(emptyList())
+    override val favoriteSongsFlow: Flow<List<FavoriteSong>> = _favoriteSongsFlow.asStateFlow()
+
+    private val favoritesFile = File(context.filesDir, "favorites.json")
+
+    init {
+        loadFavorites()
+    }
+
+    private fun loadFavorites() {
+        try {
+            if (favoritesFile.exists()) {
+                val jsonText = favoritesFile.readText()
+                val list = json.decodeFromString<List<FavoriteSong>>(jsonText)
+                _favoriteSongsFlow.value = list
+            } else {
+                _favoriteSongsFlow.value = emptyList()
+            }
+        } catch (e: Exception) {
+            _favoriteSongsFlow.value = emptyList()
+        }
+    }
+
+    private fun saveFavoritesDirectly(list: List<FavoriteSong>) {
+        try {
+            val jsonText = json.encodeToString(list)
+            favoritesFile.writeText(jsonText)
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    private suspend fun saveFavorites(list: List<FavoriteSong>) = withContext(Dispatchers.IO) {
+        saveFavoritesDirectly(list)
+    }
+
     override suspend fun getFavoriteSongs(): Result<List<FavoriteSong>> {
         delay(NETWORK_DELAY_MS)
-        return Result.success(FAVORITE_SONGS)
+        return Result.success(_favoriteSongsFlow.value)
+    }
+
+    override suspend fun isFavorite(songId: String): Boolean {
+        return _favoriteSongsFlow.value.any { it.id == songId }
+    }
+
+    override suspend fun toggleFavorite(song: FavoriteSong): Result<Unit> {
+        val currentList = _favoriteSongsFlow.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == song.id }
+        if (index != -1) {
+            if (!song.isLiked) {
+                currentList.removeAt(index)
+            } else {
+                currentList[index] = song
+            }
+        } else {
+            if (song.isLiked) {
+                currentList.add(song)
+            }
+        }
+        _favoriteSongsFlow.value = currentList
+        saveFavorites(currentList)
+        return Result.success(Unit)
     }
 
     companion object {
         private const val NETWORK_DELAY_MS = 600L
-
-        private val FAVORITE_SONGS = listOf(
-            FavoriteSong(
-                id = "fav-1",
-                title = "Gece Yarısı",
-                artist = "Mavi Deniz",
-                duration = "3:34",
-                isLiked = true,
-                isPlaying = false,
-                artworkStartColor = 0xFF6FBF5A,
-                artworkEndColor = 0xFF356B2A
-            ),
-            FavoriteSong(
-                id = "fav-2",
-                title = "Yıldız Tozu",
-                artist = "Polaris",
-                duration = "4:07",
-                isLiked = true,
-                isPlaying = false,
-                artworkStartColor = 0xFF3D5A80,
-                artworkEndColor = 0xFF1B2A45
-            ),
-            FavoriteSong(
-                id = "fav-3",
-                title = "İlk Işık",
-                artist = "Sabah Ezgisi",
-                duration = "3:25",
-                isLiked = true,
-                isPlaying = false,
-                artworkStartColor = 0xFF5AAFC9,
-                artworkEndColor = 0xFF2A5F73
-            ),
-            FavoriteSong(
-                id = "fav-4",
-                title = "Neon Sokaklar",
-                artist = "Şehir Işıkları",
-                duration = "3:43",
-                isLiked = true,
-                isPlaying = true,
-                artworkStartColor = 0xFFD98E4A,
-                artworkEndColor = 0xFF8A5526
-            ),
-            FavoriteSong(
-                id = "fav-5",
-                title = "Derin Mavi",
-                artist = "Okyanus",
-                duration = "4:29",
-                isLiked = true,
-                isPlaying = false,
-                artworkStartColor = 0xFF6FBF5A,
-                artworkEndColor = 0xFF356B2A
-            )
-        )
     }
 }

@@ -3,9 +3,13 @@ package com.turkcell.lyraapp.data.playlist
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.turkcell.lyraapp.data.favorites.FavoritesRepository
+import com.turkcell.lyraapp.data.favorites.FavoriteSong
 
 @Singleton
-class FakePlaylistRepository @Inject constructor() : PlaylistRepository {
+class FakePlaylistRepository @Inject constructor(
+    private val favoritesRepository: FavoritesRepository
+) : PlaylistRepository {
 
     private var currentPlaylist = PlaylistDetail(
         id = "lib-2",
@@ -32,22 +36,38 @@ class FakePlaylistRepository @Inject constructor() : PlaylistRepository {
 
     override suspend fun getPlaylistDetail(playlistId: String): Result<PlaylistDetail> {
         delay(600L)
-        // Farklı playlist ID'leri gelirse de prototip/showcase amaçlı Gece Sürüşü'nü dönüyoruz,
-        // ancak id bilgisini gelen playlistId ile güncelliyoruz.
+        val updatedSongs = currentPlaylist.songs.map { song ->
+            song.copy(isLiked = favoritesRepository.isFavorite(song.id))
+        }
+        currentPlaylist = currentPlaylist.copy(songs = updatedSongs)
         return Result.success(currentPlaylist.copy(id = playlistId))
     }
 
     override suspend fun toggleLikeSong(playlistId: String, songId: String): Result<Unit> {
         delay(200L)
-        val updatedSongs = currentPlaylist.songs.map { song ->
-            if (song.id == songId) {
-                song.copy(isLiked = !song.isLiked)
-            } else {
-                song
+        val song = currentPlaylist.songs.find { it.id == songId } ?: return Result.failure(Exception("Şarkı bulunamadı."))
+        val favoriteSong = FavoriteSong(
+            id = song.id,
+            title = song.title,
+            artist = song.artist,
+            duration = song.duration,
+            isLiked = !song.isLiked,
+            isPlaying = song.isPlaying,
+            artworkStartColor = song.artworkStartColor,
+            artworkEndColor = song.artworkEndColor
+        )
+        val result = favoritesRepository.toggleFavorite(favoriteSong)
+        if (result.isSuccess) {
+            val updatedSongs = currentPlaylist.songs.map { s ->
+                if (s.id == songId) {
+                    s.copy(isLiked = !s.isLiked)
+                } else {
+                    s
+                }
             }
+            currentPlaylist = currentPlaylist.copy(songs = updatedSongs)
         }
-        currentPlaylist = currentPlaylist.copy(songs = updatedSongs)
-        return Result.success(Unit)
+        return result
     }
 
     override suspend fun togglePlaylistFavorite(playlistId: String): Result<Unit> {

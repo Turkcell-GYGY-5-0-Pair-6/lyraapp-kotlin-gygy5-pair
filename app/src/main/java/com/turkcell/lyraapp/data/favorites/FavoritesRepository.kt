@@ -1,5 +1,9 @@
 package com.turkcell.lyraapp.data.favorites
 
+import kotlinx.serialization.Serializable
+import kotlinx.coroutines.flow.Flow
+
+@Serializable
 data class FavoriteSong(
     val id: String,
     val title: String,
@@ -12,5 +16,8 @@ data class FavoriteSong(
 )
 
 interface FavoritesRepository {
+    val favoriteSongsFlow: Flow<List<FavoriteSong>>
     suspend fun getFavoriteSongs(): Result<List<FavoriteSong>>
+    suspend fun isFavorite(songId: String): Boolean
+    suspend fun toggleFavorite(song: FavoriteSong): Result<Unit>
 }

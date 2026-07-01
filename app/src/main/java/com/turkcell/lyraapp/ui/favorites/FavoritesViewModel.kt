@@ -46,30 +46,31 @@ class FavoritesViewModel @Inject constructor(
         }
     }
 
+    private var isCollecting = false
+
     private fun loadSongs() {
-        if (_uiState.value.isLoading) return
+        if (isCollecting) return
+        isCollecting = true
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = favoritesRepository.getFavoriteSongs()
-            _uiState.update { it.copy(isLoading = false) }
-            result
-                .onSuccess { songs ->
-                    _uiState.update { it.copy(songs = songs) }
-                }
-                .onFailure { error ->
-                    _effect.send(FavoritesEffect.ShowError(error.message ?: "Favori şarkılar yüklenemedi."))
-                }
+            favoritesRepository.favoriteSongsFlow.collect { songs ->
+                _uiState.update { it.copy(songs = songs, isLoading = false) }
+            }
         }
     }
 
     private fun playAll() {
         val currentSongs = _uiState.value.songs
         if (currentSongs.isEmpty()) return
+        val firstSongId = currentSongs.first().id
         _uiState.update { state ->
             val updatedSongs = state.songs.mapIndexed { index, song ->
                 song.copy(isPlaying = index == 0)
             }
             state.copy(songs = updatedSongs)
+        }
+        viewModelScope.launch {
+            _effect.send(FavoritesEffect.NavigateToNowPlaying(firstSongId))
         }
     }
 
@@ -86,11 +87,10 @@ class FavoritesViewModel @Inject constructor(
     }
 
     private fun handleToggleLikeSong(songId: String) {
-        _uiState.update { state ->
-            val updatedSongs = state.songs.map { song ->
-                if (song.id == songId) song.copy(isLiked = !song.isLiked) else song
-            }
-            state.copy(songs = updatedSongs)
+        viewModelScope.launch {
+            val song = _uiState.value.songs.find { it.id == songId } ?: return@launch
+            val updatedSong = song.copy(isLiked = !song.isLiked)
+            favoritesRepository.toggleFavorite(updatedSong)
         }
     }
 }

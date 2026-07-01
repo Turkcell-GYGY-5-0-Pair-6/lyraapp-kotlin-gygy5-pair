@@ -16,6 +16,8 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.turkcell.lyraapp.data.songs.SongDto
+import com.turkcell.lyraapp.data.favorites.FavoritesRepository
+import com.turkcell.lyraapp.data.favorites.FavoriteSong
 import com.turkcell.lyraapp.data.songs.SongsApi
 import com.turkcell.lyraapp.data.songs.RecordPlayRequest
 import com.turkcell.lyraapp.data.songs.PlaybackNextRequest
@@ -56,6 +58,7 @@ class DefaultPlayerRepository @Inject constructor(
     private val authRepository: AuthRepository,
     private val okHttpClient: OkHttpClient,
     private val json: Json,
+    private val favoritesRepository: FavoritesRepository,
 ) : PlayerRepository {
 
     // Arka plan işleri ve asenkron operasyonlar için ana iş parçacığında (Main) çalışan coroutine kapsamı.
@@ -109,6 +112,19 @@ class DefaultPlayerRepository @Inject constructor(
 
                 val statesMap = downloadedIds.associateWith { SongDownloadState.DOWNLOADED }
                 _downloadStates.value = statesMap
+            }
+        }
+
+        scope.launch {
+            favoritesRepository.favoriteSongsFlow.collect { favorites ->
+                val currentId = currentSongId
+                if (currentId != null) {
+                    val isNowLiked = favorites.any { it.id == currentId }
+                    if (isLikedState != isNowLiked) {
+                        isLikedState = isNowLiked
+                        updatePlaybackState()
+                    }
+                }
             }
         }
     }
@@ -341,6 +357,7 @@ class DefaultPlayerRepository @Inject constructor(
     override fun setCurrentSongId(songId: String) {
         currentSongId = songId
         scope.launch {
+            isLikedState = favoritesRepository.isFavorite(songId)
             getSongList()
             updatePlaybackState()
         }
@@ -354,6 +371,7 @@ class DefaultPlayerRepository @Inject constructor(
             val metadataFile = File(context.filesDir, "downloads/$songId.json")
             if (mediaFile.exists() && metadataFile.exists()) {
                 val metadata = json.decodeFromString<OfflineMetadata>(metadataFile.readText())
+                isLikedState = favoritesRepository.isFavorite(songId)
                 if (currentSongId != songId) {
                     currentSongId = songId
 
@@ -394,6 +412,7 @@ class DefaultPlayerRepository @Inject constructor(
             val response = songsApi.getPlaybackNext("Bearer $token", PlaybackNextRequest(songId))
             val playbackData = response.data
 
+            isLikedState = favoritesRepository.isFavorite(songId)
             // Eğer oynatılmak istenen şarkı şu an yüklü olandan farklıysa ExoPlayer'a yükler.
             if (currentSongId != songId) {
                 currentSongId = songId
@@ -478,10 +497,18 @@ class DefaultPlayerRepository @Inject constructor(
 
     // Şarkının beğenilme (beğendim/beğenmedim) durumunu değiştirir.
     override suspend fun toggleLike(): Result<Unit> = runCatching {
-        isLikedState = !isLikedState
-        withContext(Dispatchers.Main) {
-            updatePlaybackState()
-        }
+        val currentPlayback = _playbackStateFlow.value ?: return@runCatching
+        val favoriteSong = FavoriteSong(
+            id = currentPlayback.songId,
+            title = currentPlayback.title,
+            artist = currentPlayback.artist,
+            duration = currentPlayback.durationText,
+            isLiked = !currentPlayback.isLiked,
+            isPlaying = currentPlayback.isPlaying,
+            artworkStartColor = currentPlayback.artworkStartColor,
+            artworkEndColor = currentPlayback.artworkEndColor
+        )
+        favoritesRepository.toggleFavorite(favoriteSong)
     }
 
     // Karışık çalma modunu açar veya kapatır.
